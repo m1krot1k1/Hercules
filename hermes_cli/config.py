@@ -533,6 +533,10 @@ DEFAULT_CONFIG = {
         # provider hiccups on a single provider.
         "api_max_retries": 3,
         "service_tier": "",
+        # Auto-prefix mode: when "auto", ordinary messages (not slash commands)
+        # are automatically wrapped as "/start <message>" to invoke the full
+        # orchestrator chain.  Set to "manual" to disable auto-prefixing.
+        "start_mode": "auto",
         # Tool-use enforcement: injects system prompt guidance that tells the
         # model to actually call tools instead of describing intended actions.
         # Values: "auto" (default — applies to gpt/codex models), true/false

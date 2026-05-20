@@ -13853,6 +13853,17 @@ class HermesCLI:
                         n = len(submit_images)
                         _cprint(f"  {_DIM}📎 {n} image{'s' if n > 1 else ''} attached{_RST}")
 
+                    # Auto-prefix /start if start_mode is "auto" and this isn't a slash command
+                    if isinstance(user_input, str) and user_input.strip():
+                        try:
+                            from hermes_cli.config import load_config
+                            start_mode = load_config().get("agent", {}).get("start_mode", "auto")
+                            if start_mode == "auto" and not user_input.startswith("/"):
+                                user_input = "/start " + user_input
+                                _cprint(f"  {_DIM}⚡ Auto-prefixed /start (orchestrator mode){_RST}")
+                        except Exception:
+                            pass
+
                     # Regular chat - run agent
                     self._agent_running = True
                     app.invalidate()  # Refresh status line
