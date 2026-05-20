@@ -7969,7 +7969,20 @@ class HermesCLI:
                 self._agent_running = True
                 self._invalidate()
                 try:
-                    self.chat("/start " + payload)
+                    # Inject FIRST_ACTION directive — root MUST delegate immediately.
+                    start_msg = (
+                        "/start " + payload +
+                        "\n\n⛔ FIRST_ACTION (HARD CONSTRAINT): "
+                        "delegate_task(role='orchestrator', "
+                        "goal='START_ROLE: evaluate readiness and execute. ORIGINAL_REQUEST: "
+                        + payload.replace("'", "\\'") +
+                        "', context='START_GATE: сначала оцени готовность, затем декомпозируй и выполни.')\n"
+                        "⛔ DO NOT call skill_view, session_search, read_file, terminal, "
+                        "or ANY tool before delegate_task.\n"
+                        "⛔ You are root supervisor — your ONLY job is to spawn the orchestrator. "
+                        "All analysis happens INSIDE the orchestrator."
+                    )
+                    self.chat(start_msg)
                 finally:
                     self._agent_running = False
                     self._spinner_text = ""
@@ -14064,11 +14077,25 @@ class HermesCLI:
                             from hermes_cli.config import load_config
                             start_mode = load_config().get("agent", {}).get("start_mode", "auto")
                             if start_mode == "auto" and not user_input.startswith("/"):
+                                original_task = user_input
                                 user_input = "/start " + user_input
                                 _cprint(f"  {_DIM}⚡ Auto-prefixed /start (orchestrator mode){_RST}")
                                 # Auto-enable tree view so subagent activity is visible
                                 if not self._tree_mode:
                                     self._auto_enable_tree()
+                                # Inject FIRST_ACTION directive — root MUST delegate immediately,
+                                # not load skills / search sessions / read files first.
+                                user_input += (
+                                    "\n\n⛔ FIRST_ACTION (HARD CONSTRAINT): "
+                                    "delegate_task(role='orchestrator', "
+                                    "goal='START_ROLE: evaluate readiness and execute. ORIGINAL_REQUEST: "
+                                    + original_task.replace("'", "\\'") +
+                                    "', context='START_GATE: сначала оцени готовность, затем декомпозируй и выполни.')\n"
+                                    "⛔ DO NOT call skill_view, session_search, read_file, terminal, "
+                                    "or ANY tool before delegate_task.\n"
+                                    "⛔ You are root supervisor — your ONLY job is to spawn the orchestrator. "
+                                    "All analysis happens INSIDE the orchestrator."
+                                )
                         except Exception:
                             pass
 
