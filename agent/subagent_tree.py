@@ -170,16 +170,33 @@ def render_subagent_tree(
         branch = "└── " if is_last else "├── "
         indent = prefix + branch
 
-        # Node line:  ⚡ code-reviewer (3s, 12 tools, file_read)
+        # Node line:  ⚡ code-reviewer (3s, 12t, file_read)
+        # Show reasoning if available for running agents
+        reasoning = node.get("reasoning", "") or ""
         tool_part = f", {tool_count}t" if tool_count else ""
         model_part = f" [{model}]" if model else ""
-        node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part})"
+
+        if status == "running" and reasoning:
+            # Show what the agent is currently thinking/doing
+            short_reason = reasoning[:40] + ("..." if len(reasoning) > 40 else "")
+            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part})"
+            reason_line = f"{indent}   ┈ {short_reason}"
+        elif last_tool and status == "running":
+            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part}, {last_tool})"
+            reason_line = None
+        else:
+            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part})"
+            reason_line = None
 
         line = f"{indent}{node_line}"
         if len(line) > max_tree_width:
             line = line[: max_tree_width - 3] + "..."
 
         parts.append(line)
+
+        # Show reasoning line if agent is actively thinking
+        if reason_line:
+            parts.append(reason_line)
 
         # Render children recursively
         cid = node.get("subagent_id")

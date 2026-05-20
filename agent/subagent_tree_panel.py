@@ -48,7 +48,7 @@ _MAX_TREE_WIDTH = 36
 _MAX_GOAL_CHARS = 24
 _VISIBLE_AFTER_COMPLETION = 60.0
 
-_RUNNING_ICONS = ["ŀ", "ÿ", "âš"]  # will use unicode later
+_RUNNING_ICONS = ["🗘", "🌀", "⚡"]
 
 
 # ── Tree node ─────────────────────────────────────────────────────────────
@@ -78,13 +78,13 @@ class TreeNode:
     @property
     def icon(self) -> str:
         if self.status == "running":
-            return "âśš"
+            return "⚡"
         if self.status == "completed":
-            return "âśš"
+            return "✓"
         if self.status in ("failed", "error", "timeout"):
-            return "âś—"
+            return "✗"
         if self.status == "interrupted":
-            return "âš"
+            return "⏸"
         return "?"
 
     @property
@@ -238,8 +238,11 @@ class SubagentTreePanel:
         with self._lock:
             if not self.flat_nodes:
                 return FormattedText([
-                    ("class:tree.header", " \u2695 Agents"),
-                    ("class:tree.empty", "\n   (no active agents)"),
+                    ("class:tree.header", " \u2695 Agents\n"),
+                    ("class:tree.empty", "\n   (no active agents)\n\n"),
+                    ("class:tree.idle", "   Use /start <task> to launch\n"),
+                    ("class:tree.idle", "   an orchestrator, or use\n"),
+                    ("class:tree.idle", "   delegate_task for workers.\n"),
                 ])
 
             running = sum(1 for n in self.flat_nodes if n.status == "running")

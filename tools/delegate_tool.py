@@ -252,7 +252,7 @@ def list_active_subagents() -> List[Dict[str, Any]]:
     """Snapshot of the currently running subagent tree.
 
     Each record: {subagent_id, parent_id, depth, goal, model, started_at,
-    tool_count, status}.  Safe to call from any thread — returns a copy.
+    tool_count, last_tool, reasoning, status}.  Safe to call from any thread — returns a copy.
     """
     with _active_subagents_lock:
         return [
@@ -830,6 +830,12 @@ def _build_child_progress_callback(
 
         if event == DelegateEvent.TASK_THINKING:
             text = preview or tool_name or ""
+            # Update reasoning field in subagent registry for live tree display
+            if subagent_id is not None:
+                with _active_subagents_lock:
+                    rec = _active_subagents.get(subagent_id)
+                    if rec is not None:
+                        rec["reasoning"] = (text[:200]) if text else ""
             if spinner:
                 short = (text[:55] + "...") if len(text) > 55 else text
                 try:
@@ -1501,6 +1507,8 @@ def _run_single_child(
                 "started_at": time.time(),
                 "status": "running",
                 "tool_count": 0,
+                "last_tool": "",
+                "reasoning": "",
                 "agent": child,
             }
         )
