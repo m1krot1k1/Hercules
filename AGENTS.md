@@ -1,4 +1,4 @@
-# Hermes Agent - Development Guide
+# Hercules Agent - Development Guide
 
 Instructions for AI coding assistants and developers working on the hermes-agent codebase.
 
@@ -659,8 +659,8 @@ violate them.
 
 4. **`author` credits the human contributor first.** For external
    contributions, the contributor's real name + GitHub handle goes
-   first; "Hermes Agent" is the secondary collaborator. If the
-   contributor's commit shows "Hermes Agent" as author (because they
+   first; "Hercules Agent" is the secondary collaborator. If the
+   contributor's commit shows "Hercules Agent" as author (because they
    used Hermes to draft the skill), replace it with their actual name
    — credit the human, not the tool.
 
@@ -726,7 +726,7 @@ Two shapes:
 - **Single:** pass `goal` (+ optional `context`, `toolsets`).
 - **Batch (parallel):** pass `tasks: [...]` — each gets its own subagent
   running concurrently. Concurrency is capped by
-  `delegation.max_concurrent_children` (default 3).
+  `delegation.max_concurrent_children` (default 10).
 
 Roles:
 
@@ -734,7 +734,7 @@ Roles:
   `clarify`, `memory`, `send_message`, `execute_code`.
 - `role="orchestrator"` — retains `delegate_task` so it can spawn its
   own workers. Gated by `delegation.orchestrator_enabled` (default true)
-  and bounded by `delegation.max_spawn_depth` (default 2).
+  and bounded by `delegation.max_spawn_depth` (default 3).
 
 Key config knobs (under `delegation:` in `config.yaml`):
 `max_concurrent_children`, `max_spawn_depth`, `child_timeout_seconds`,

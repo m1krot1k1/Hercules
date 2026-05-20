@@ -1,6 +1,6 @@
 ---
 title: "Windows (Native) Guide — Early Beta"
-description: "Early BETA: run Hermes Agent natively on Windows 10 / 11 — install, feature matrix, UTF-8 console, Git Bash, gateway as a Scheduled Task, editor handling, PATH, uninstall, and common pitfalls"
+description: "Early BETA: run Hercules Agent natively on Windows 10 / 11 — install, feature matrix, UTF-8 console, Git Bash, gateway as a Scheduled Task, editor handling, PATH, uninstall, and common pitfalls"
 sidebar_label: "Windows (Native) — Beta"
 sidebar_position: 3
 ---

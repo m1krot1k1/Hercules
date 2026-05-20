@@ -129,8 +129,8 @@ _SUBAGENT_TOOLSETS = sorted(
 )
 _TOOLSET_LIST_STR = ", ".join(f"'{n}'" for n in _SUBAGENT_TOOLSETS)
 
-_DEFAULT_MAX_CONCURRENT_CHILDREN = 3
-MAX_DEPTH = 1  # flat by default: parent (0) -> child (1); grandchild rejected unless max_spawn_depth raised.
+_DEFAULT_MAX_CONCURRENT_CHILDREN = 10
+MAX_DEPTH = 3  # three-level by default: parent (0) → orchestrator (1) → specialist-orchestrator (2) → workers (3); enables specialist self-delegation and council pipelines.
 # Configurable depth cap consulted by _get_max_spawn_depth; MAX_DEPTH
 # stays as the default fallback and is still the symbol tests import.
 _MIN_SPAWN_DEPTH = 1

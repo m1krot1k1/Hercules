@@ -222,7 +222,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -428,7 +428,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -634,7 +634,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -840,7 +840,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -1046,7 +1046,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -1252,7 +1252,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -1458,7 +1458,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -1664,7 +1664,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -1870,7 +1870,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -2076,7 +2076,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -2282,7 +2282,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -2488,7 +2488,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -2694,7 +2694,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -2900,7 +2900,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -3106,7 +3106,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -3312,7 +3312,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -3518,7 +3518,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
@@ -3724,7 +3724,7 @@ scripts/run_tests.sh
 - 📚 [Skills Hub](https://agentskills.io)
 - 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
-- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
+- 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hercules Agent и OpenClaw на одном аккаунте WeChat.
 
 ---
 
