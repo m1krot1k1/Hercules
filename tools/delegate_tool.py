@@ -180,12 +180,14 @@ def _register_subagent(record: Dict[str, Any]) -> None:
         _active_subagents[sid] = record
 
 
-def _unregister_subagent(subagent_id: str) -> None:
+def _unregister_subagent(subagent_id: str, summary: str = "") -> None:
     with _active_subagents_lock:
         rec = _active_subagents.get(subagent_id)
         if rec is not None:
             rec["status"] = "completed"
             rec["completed_at"] = round(time.monotonic(), 1)
+            if summary:
+                rec["summary"] = summary
             # Keep in registry for tree display; cleaned up
             # after TUI session or by _gc_completed_subagents()
 
@@ -200,7 +202,7 @@ def _mark_subagent_failed(subagent_id: str, error: str = "") -> None:
             rec["error"] = str(error)[:200]
 
 
-_MAX_COMPLETED_AGE = 300  # keep completed/failed records for 5 minutes
+_MAX_COMPLETED_AGE = 86400  # keep completed/failed records for 24h (session-persistent)
 
 
 def _gc_completed_subagents() -> int:
@@ -1861,6 +1863,10 @@ def _run_single_child(
             except Exception as e:
                 logger.debug("Progress callback completion failed: %s", e)
 
+        # Update TUI registry: mark as completed with summary for tree panel
+        if _subagent_id:
+            _unregister_subagent(_subagent_id, summary=summary if status == "completed" else "")
+
         return entry
 
     except Exception as exc:
@@ -1897,19 +1903,10 @@ def _run_single_child(
         if _heartbeat_thread.ident is not None:
             _heartbeat_thread.join(timeout=5)
 
-        # Mark the TUI-facing registry entry as done/failed instead of
-        # removing it, so the tree view persists until GC sweeps it.
+        # Drop the TUI-facing registry entry.  Safe to call even if the
+        # child was never registered (e.g. ID missing on test doubles).
         if _subagent_id:
-            with _active_subagents_lock:
-                rec = _active_subagents.get(_subagent_id)
-            if rec is not None:
-                inner_status = rec.get("status", "running")
-                if inner_status == "running":
-                    # Child threw before producing an entry — mark as failed
-                    _mark_subagent_failed(_subagent_id, "")
-                else:
-                    # Already marked completed/failed by successful path
-                    pass
+            _unregister_subagent(_subagent_id)
 
         if child_pool is not None and leased_cred_id is not None:
             try:
