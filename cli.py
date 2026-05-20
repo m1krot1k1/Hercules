@@ -7842,6 +7842,17 @@ class HermesCLI:
                 _cprint(f"  {_DIM}✗ Unknown argument: {_escape(_args)}. Use /exit --delete to also remove session history.{_RST}")
                 return True
             return False
+        elif canonical == "start":
+            # /start <task> — manually trigger the orchestrator chain.
+            # This is the explicit form of what start_mode=auto does automatically.
+            parts = cmd_original.split(None, 1)
+            payload = parts[1].strip() if len(parts) > 1 else ""
+            if not payload:
+                _cprint("  Usage: /start <task> — launch full orchestrated mode with orchestrator")
+                _cprint("  Tip:   Just type your message. If start_mode is 'auto', /start is applied automatically.")
+            else:
+                self._pending_input.put("/start " + payload)
+                _cprint(f"  ⊙ Queued /start: {payload[:80]}{'...' if len(payload) > 80 else ''}")
         elif canonical == "help":
             self.show_help()
         elif canonical == "profile":
