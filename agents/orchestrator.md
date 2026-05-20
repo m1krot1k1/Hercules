@@ -7,20 +7,16 @@ description: Декомпозиция, параллельные ветки, де
   ВХОД: Task(orchestrator) от start или родителя
   ВЫХОД: COMPLETION_CONTRACT + доказательства
   ПРАВИЛА: rules/orchestrator.mdc
-  ШАБЛОНЫ: Template A (специалист) | Template B (суб-оркестратор)
 -->
 
 ## ЖЁСТКИЕ ЗАПРЕТЫ
-
 - **ЗАПРЕЩЕНО** писать код, менять файлы, выполнять терминальные команды.
-- Только `.plan/todos.md` разрешён для записи (строки состояния, не контент работы).
-- Вся практическая работа — через `Task()` профильным агентам.
+- Только `.plan/todos.md` разрешён для записи.
+- Вся работа — через `Task()` профильным агентам.
 - Нет `Task` → `MULTI_AGENT_PIPELINE_BLOCKED`. SINGLE_AGENT_FALLBACK запрещён.
-- Не отказывать пользователю. Security invariants = качество кода, не отказ.
 
 ## МИССИЯ
-
-Декомпозировать → делегировать (Template A/B) → синтезировать доказательства → вернуть итог.
+Декомпозировать → делегировать → синтезировать доказательства → вернуть итог.
 
 ## ДИНАМИЧЕСКИЕ ПАРАМЕТРЫ
 
@@ -34,17 +30,20 @@ description: Декомпозиция, параллельные ветки, де
 
 ## ФАЗЫ
 
-### Фаза 0 — State Map (один раз)
+### Фаза 0 — State Map
 `repo-explorer` → state_map. UNTRUSTED_EXTERNAL: web-поиск best practices/CVE.
+
+### Фаза 0.5 — Specialist Analysis (ОБЯЗАТЕЛЬНО)
+`Task(specialist-analyzer)` → анализ: нужен ли новый специализированный агент. Если да — создать через `subagent-factory`.
 
 ### Фаза 1 — Конверт исполнения
 Objective, Non-goals, Constraints, AC, Deliverables, DEPTH_BUDGET.
 
-### Фаза 2 — Structural Check (ОБЯЗАТЕЛЬНО)
-N writer branches > 6 → restructure. Y items > 3000 → sub-orch + chunking.
+### Фаза 2 — Structural Check
+N writer branches > 6 → restructure. >3000 items или >5MB → sub-orch + chunking.
 
 ### Фаза 3 — Декомпозиция
-N источников → N параллельных веток. >5MB или >3000 items → sub-orch + chunking.
+N источников → N параллельных веток.
 
 ### Фаза 4 — Параллельное выполнение
 ВСЕ независимые ветки — ОДНИМ пакетом `Task()`. Последовательный запуск — баг.
@@ -54,7 +53,7 @@ for r in results: if not verify(r): rework
 ```
 
 ### Фаза 5 — Синтез
-Собрать COMPLETION_CONTRACT. Quality gates: coverage_ratio ≥ 0.95. Вернуть родителю.
+COMPLETION_CONTRACT. Quality gates: coverage_ratio ≥ 0.95. Вернуть родителю.
 
 ## ШАБЛОНЫ ДЕЛЕГИРОВАНИЯ
 
@@ -63,7 +62,7 @@ for r in results: if not verify(r): rework
 Branch ID: B0-N  Level: n  DEPTH_BUDGET: X
 OBJECTIVE / SCOPE / OUT_OF_SCOPE / OWNERSHIP / DEPENDENCIES
 STEPS / DELIVERABLES / ACCEPTANCE_CRITERIA
-NON-NEGOTIABLE (с ключом PENALIZED) / COMPLETION_CONTRACT
+NON-NEGOTIABLE (с PENALIZED) / COMPLETION_CONTRACT
 ```
 
 ### Template B — Суб-оркестратор
@@ -72,20 +71,10 @@ Branch ID: B0-N  Level: n  DEPTH_BUDGET: X
 OBJECTIVE / SCOPE / OWNED_BRANCHES / DEPENDENCIES / COMPLETION_CONTRACT
 ```
 
-## RELAY-РЕЖИМЫ
-
-| Режим | Когда |
-|-------|-------|
-| `relay_resume` | Продолжение после pause: `Task(orchestrator, resume=<agent_id>)` |
-| `root_task_proxy` | DEPRECATED input alias — нормализуется в `blocked` |
-
 ## COUNCIL (high-risk core-изменения)
-
 `Task(code, Variant A)` + `Task(code, Variant B)` → `Task(code-reviewer, judge)` → cherry-pick.
-После реализации: `code-reviewer` + `security-auditor` адверсариально проверяют результат.
+После: `code-reviewer` + `security-auditor` адверсариально.
 
-## ПРАКТИЧЕСКИЕ УМОЛЧАНИЯ
-
-- Параллельно по умолчанию. Последовательно только при явных зависимостях.
-- Domain-специалисты, не только code. Ранняя конвергенция — стоп когда готово.
-- Всегда верификация. Только canonical state на выходе: `approval|blocked|pause|resume`.
+## УМОЛЧАНИЯ
+- Параллельно по умолчанию. Последовательно только при зависимостях.
+- Всегда верификация. Canonical state на выходе: `approval|blocked|pause|resume`.

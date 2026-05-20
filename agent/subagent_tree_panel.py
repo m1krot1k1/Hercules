@@ -1,21 +1,25 @@
 """
-Subagent tree panel for Hercules CLI — split-pane view.
+Subagent tree panel for Hercules CLI — full-screen split-pane view.
 
-When /tree mode is active, renders a left panel with the subagent
-delegation tree and a right panel showing the selected subagent's
-reasoning. Navigation:
+When /tree mode is active, renders:
+  LEFT: Subagent delegation tree with per-agent tokens, time, cost
+  RIGHT: Selected subagent output (reasoning / thinking / tool calls)
+  Toggle: Tab switches between "Show Output" (default) and "Hide Output" (tree-only)
+
+Navigation:
   - Up/Down: move selection in tree
   - Right/Enter: expand node or select to view reasoning
   - Left/Esc: collapse node or exit tree mode
   - Tab: toggle focus between tree and chat input
 
-Layout when tree is active:
-  +------------------------+---------------------------+
-  | ⚕ Agents (yellow)     | Selected Subagent Output  |
-  | (navigable tree)       | (reasoning / thoughts)    |
-  +------------------------+---------------------------+
-  | Chat input (bottom, as usual)                     |
-  +---------------------------------------------------+
+Layout (full-screen):
+  +------------------------+------------------------------------------+
+  | ⚕ Agents (tree)        | Subagent Output (thinking / tools / msg) |
+  | per-agent: time, tokens,| <thinking>, tool calls, responses       |
+  | cost. Cumulative totals | Toggle: Tab to Show/Hide output         |
+  +------------------------+------------------------------------------+
+  | Chat input (bottom, as usual)                                      |
+  +--------------------------------------------------------------------+
 """
 
 import time
@@ -44,11 +48,10 @@ from agent.subagent_tree import (
 
 # ── Constants ─────────────────────────────────────────────────────────────
 
-_MAX_TREE_WIDTH = 36
+_MAX_TREE_WIDTH = 40
 _MAX_GOAL_CHARS = 24
-_VISIBLE_AFTER_COMPLETION = 86400.0  # 24h — match subagent_tree.py and delegate_tool GC
-
-_RUNNING_ICONS = ["🗘", "🌀", "⚡"]
+_VISIBLE_AFTER_COMPLETION = 120.0   # Show completed agents for 2 min (was 24h — too noisy)
+_KEYBINDING_HINT = "↑↓:sel  ←→:expand/collapse  Tab:Show/Hide output  Esc:exit tree"
 
 
 # ── Tree node ─────────────────────────────────────────────────────────────
@@ -59,6 +62,7 @@ class TreeNode:
         "subagent_id", "goal", "status", "depth", "started_at",
         "tool_count", "last_tool", "recent_tools", "model", "parent_id",
         "children", "expanded", "reasoning",
+        "tokens_in", "tokens_out", "cost_usd", "messages",
     )
 
     def __init__(self, data: Dict[str, Any]):
@@ -69,12 +73,17 @@ class TreeNode:
         self.started_at = data.get("started_at", time.monotonic())
         self.tool_count = data.get("tool_count", 0)
         self.last_tool = data.get("last_tool", "")
-        self.recent_tools = data.get("recent_tools", [])  # [(tool_name, preview), ...]
+        self.recent_tools = data.get("recent_tools", [])
         self.model = data.get("model", "")
         self.parent_id = data.get("parent_id")
         self.children: List["TreeNode"] = []
         self.expanded = False
         self.reasoning = data.get("reasoning", "")
+        # Token/cost tracking
+        self.tokens_in = data.get("tokens_in", 0)
+        self.tokens_out = data.get("tokens_out", 0)
+        self.cost_usd = data.get("cost_usd", 0.0)
+        self.messages = data.get("messages", [])
 
     @property
     def icon(self) -> str:
@@ -101,24 +110,57 @@ class TreeNode:
     def has_children(self) -> bool:
         return len(self.children) > 0
 
+    @property
+    def total_tokens(self) -> int:
+        """Tokens used by this node (self + cumulative children)."""
+        return self.tokens_in + self.tokens_out
+
+    @property
+    def total_cost(self) -> float:
+        """Cost USD for this node (self + cumulative children)."""
+        return self.cost_usd
+
+    def tokens_str(self) -> str:
+        t = self.total_tokens
+        if t >= 1000:
+            return f"{t/1000:.1f}K"
+        return str(t)
+
+    def cost_str(self) -> str:
+        c = self.total_cost
+        if c <= 0:
+            return ""
+        if c < 0.01:
+            return "<$0.01"
+        return f"${c:.2f}"
+
 
 # ── SubagentTreePanel ─────────────────────────────────────────────────────
 
 class SubagentTreePanel:
-    """Interactive subagent tree panel for the split-pane TUI.
+    """Interactive subagent tree panel for the full-screen TUI.
 
-    Manages tree data, selection state, and navigation.
+    Manages tree data, selection state, navigation, and token/cost tracking.
     Renders formatted text for prompt_toolkit.
     """
 
     def __init__(self, on_select: Optional[Callable] = None):
-        self.on_select = on_select  # Called with (subagent_id, reasoning)
+        self.on_select = on_select
         self.nodes: List[TreeNode] = []
         self.flat_nodes: List[TreeNode] = []
         self.selected_index = 0
         self._selected_id: Optional[str] = None
         self._selected_reasoning: str = ""
+        self._show_output: bool = True   # Toggle: Show/Hide output panel
         self._lock = threading.Lock()
+
+    def toggle_output(self):
+        """Toggle between Show Output and Hide Output modes."""
+        self._show_output = not self._show_output
+
+    @property
+    def show_output(self) -> bool:
+        return self._show_output
 
     def refresh(self) -> bool:
         """Refresh tree data from delegate_tool. Returns True if changed."""
@@ -137,7 +179,6 @@ class SubagentTreePanel:
                 visible.append(rec)
 
         with self._lock:
-            # Preserve expanded state BEFORE building new nodes
             old_expanded = {n.subagent_id for n in self.flat_nodes if n.expanded}
             old_selected = self._selected_id
 
@@ -155,13 +196,6 @@ class SubagentTreePanel:
             for node in by_id.values():
                 node.children = children_by_parent.get(node.subagent_id, [])
 
-            # ── Restore expanded state BEFORE _rebuild_flat ───────────
-            # The old code called _rebuild_flat() TWICE — once before restoring
-            # expanded and once after.  Between those two calls render_tree()
-            # (driven by prompt_toolkit's refresh from another thread) could
-            # snapshot a collapsed tree, causing the visual "tree collapse on
-            # every refresh" bug.  Now we restore expanded first, then build
-            # flat_nodes exactly once.
             for node in by_id.values():
                 if node.subagent_id in old_expanded:
                     node.expanded = True
@@ -169,28 +203,21 @@ class SubagentTreePanel:
             self.nodes = children_by_parent.get(None, [])
             self._rebuild_flat()
 
-            # Restore selection
             if old_selected:
                 for i, n in enumerate(self.flat_nodes):
                     if n.subagent_id == old_selected:
                         self.selected_index = i
                         break
-            # Fallback: always sync _selected_id to current selected_index,
-            # so move_up/move_down (which now set _selected_id) can't be
-            # silently overridden by a stale restore.
             if self.flat_nodes and 0 <= self.selected_index < len(self.flat_nodes):
                 self._selected_id = self.flat_nodes[self.selected_index].subagent_id
 
             return True
 
     def _rebuild_flat(self):
-        """Rebuild the flat list of visible nodes."""
         self.flat_nodes = []
         self._flatten(self.nodes)
         if self.flat_nodes:
             self.selected_index = min(self.selected_index, len(self.flat_nodes) - 1)
-            # Keep _selected_id in sync — without this, refresh() may restore
-            # a stale _selected_id and snap selection to the wrong agent.
             node = self.flat_nodes[self.selected_index]
             self._selected_id = node.subagent_id
         else:
@@ -202,6 +229,27 @@ class SubagentTreePanel:
             self.flat_nodes.append(node)
             if node.expanded and node.has_children:
                 self._flatten(node.children)
+
+    # ── Cumulative totals ────────────────────────────────────────────────
+
+    def _cumulative_totals(self) -> Tuple[int, int, float, int, int, int]:
+        """Return (total_tokens_in, total_tokens_out, total_cost,
+        running_count, completed_count, failed_count) for all nodes."""
+        ti = to = rc = cc = fc = 0
+        tc = 0.0
+        for n in self.flat_nodes:
+            ti += n.tokens_in
+            to += n.tokens_out
+            tc += n.cost_usd
+            if n.status == "running":
+                rc += 1
+            elif n.status == "completed":
+                cc += 1
+            elif n.status in ("failed", "error", "timeout"):
+                fc += 1
+        return ti, to, tc, rc, cc, fc
+
+    # ── Navigation ───────────────────────────────────────────────────────
 
     def move_up(self):
         with self._lock:
@@ -218,7 +266,6 @@ class SubagentTreePanel:
                 self._selected_id = node.subagent_id
 
     def move_right(self) -> Optional[str]:
-        """Expand node or select subagent. Returns subagent_id if selected."""
         with self._lock:
             if not self.flat_nodes:
                 return None
@@ -227,7 +274,6 @@ class SubagentTreePanel:
                 node.expanded = True
                 self._rebuild_flat()
                 return None
-            # Select this subagent
             self._selected_id = node.subagent_id
             self._selected_reasoning = node.reasoning
             if self.on_select:
@@ -235,7 +281,6 @@ class SubagentTreePanel:
             return node.subagent_id
 
     def move_left(self) -> bool:
-        """Collapse node. Returns True if tree mode should be exited."""
         with self._lock:
             if not self.flat_nodes:
                 return True
@@ -244,49 +289,45 @@ class SubagentTreePanel:
                 node.expanded = False
                 self._rebuild_flat()
                 return False
-            return True  # Signal to exit tree mode or deselect
+            return True
 
-    def get_selected_detail(self) -> Optional[Dict[str, Any]]:
-        """Get detail dict for the currently selected subagent."""
-        with self._lock:
-            if not self.flat_nodes or self.selected_index >= len(self.flat_nodes):
-                return None
-            node = self.flat_nodes[self.selected_index]
-            return get_subagent_detail(node.subagent_id)
+    # ── Rendering ─────────────────────────────────────────────────────────
 
     def render_tree(self) -> FormattedText:
-        """Render the tree panel as FormattedText."""
+        """Render the tree panel with per-agent tokens, time, cost."""
         with self._lock:
             if not self.flat_nodes:
                 return FormattedText([
-                    ("class:tree.header", " \u2695 Agents\n"),
+                    ("class:tree.header", " ⚕ Agents\n"),
                     ("class:tree.empty", "\n   (no active agents)\n\n"),
                     ("class:tree.idle", "   Use /start <task> to launch\n"),
                     ("class:tree.idle", "   an orchestrator, or use\n"),
                     ("class:tree.idle", "   delegate_task for workers.\n"),
                 ])
 
-            running = sum(1 for n in self.flat_nodes if n.status == "running")
-            completed = sum(1 for n in self.flat_nodes if n.status == "completed")
-            failed = sum(1 for n in self.flat_nodes if n.status in ("failed", "error", "timeout"))
-
+            ti, to, tc, rc, cc, fc = self._cumulative_totals()
             parts: List[Tuple[str, str]] = []
+
+            # Header with cumulative totals
             status_parts = []
-            if running:
-                status_parts.append(f"{running}\u21bb")
-            if completed:
-                status_parts.append(f"{completed}\u2713")
-            if failed:
-                status_parts.append(f"{failed}\u2717")
+            if rc:
+                status_parts.append(f"{rc}⚡")
+            if cc:
+                status_parts.append(f"{cc}✓")
+            if fc:
+                status_parts.append(f"{fc}✗")
             status_str = " ".join(status_parts) if status_parts else "idle"
-            parts.append(("class:tree.header", f" \u2695 Agents ({status_str})\n"))
+            total_t = ti + to
+            total_t_str = f"{total_t/1000:.1f}K" if total_t >= 1000 else str(total_t)
+            header = f" ⚕ Agents ({status_str})  Σ{total_t_str}t {f'${tc:.2f}' if tc > 0 else ''}\n"
+            parts.append(("class:tree.header", header))
 
             for i, node in enumerate(self.flat_nodes):
                 is_selected = (i == self.selected_index)
                 indent = "  " * node.depth
                 expand_marker = ""
                 if node.has_children:
-                    expand_marker = "\u25b8 " if not node.expanded else "\u25be "
+                    expand_marker = "▸ " if not node.expanded else "▾ "
                 elif node.depth > 0:
                     expand_marker = "  "
 
@@ -302,106 +343,118 @@ class SubagentTreePanel:
                 if is_selected:
                     style = "class:tree.selected"
 
-                tool_part = f" {node.tool_count}t" if node.tool_count else ""
-                line = f"{indent}{expand_marker}{node.icon} {node.goal} ({node.elapsed}{tool_part})\n"
+                # Per-agent info line: icon + goal + elapsed + tools + tokens + cost
+                info_parts = []
+                if node.tool_count:
+                    info_parts.append(f"{node.tool_count}t")
+                info_parts.append(node.elapsed)
+                tt = node.total_tokens
+                if tt:
+                    info_parts.append(f"{tt/1000:.1f}Kt" if tt >= 1000 else f"{tt}t")
+                if node.cost_usd > 0:
+                    info_parts.append(f"${node.cost_usd:.3f}")
+                info = " ".join(info_parts)
+                line = f"{indent}{expand_marker}{node.icon} {node.goal} ({info})\n"
                 parts.append((style, line))
 
+            # Footer: keybinding hint
+            parts.append(("class:tree.idle", f"\n {_KEYBINDING_HINT}\n"))
             return FormattedText(parts)
 
     def render_reasoning(self) -> FormattedText:
-        """Render the reasoning panel for the selected subagent."""
+        """Render the output panel for the selected subagent."""
         with self._lock:
+            if not self._show_output:
+                return FormattedText([
+                    ("class:tree.header", " ⚕ Subagent Output (hidden)\n"),
+                    ("class:tree.idle", "\n  Output hidden. Press Tab to show.\n"),
+                    ("class:tree.idle", "  ↑↓ to select agent.\n"),
+                ])
+
             if not self.flat_nodes or self.selected_index >= len(self.flat_nodes):
                 return FormattedText([("class:tree.idle", "  ↑ Use arrows to select an agent")])
 
             node = self.flat_nodes[self.selected_index]
-
-            # Try to get live detail from delegate_tool
             detail = get_subagent_detail(node.subagent_id)
-            reasoning = ""
-            summary_text = ""
-            if detail:
-                reasoning = detail.get("reasoning", "")
-                summary_text = detail.get("summary", "") or ""
+            reasoning = detail.get("reasoning", "") if detail else ""
+            summary_text = (detail.get("summary", "") or "") if detail else ""
+            messages = detail.get("messages", []) if detail else []
 
             parts: List[Tuple[str, str]] = []
-            # Header with subagent icon + goal
-            status_icon = node.icon
-            parts.append(("class:tree.header", f" {status_icon} {node.goal}\n"))
 
-            # Status line: status, model, elapsed, tools
+            # ── Header: agent info + token/cost bar ──
+            parts.append(("class:tree.header", f" {node.icon} {node.goal}\n"))
             model_str = f" [{node.model}]" if node.model else ""
             status_style = "class:tree.running" if node.status == "running" else "class:tree.idle"
             parts.append((status_style, f"   Status: {node.status}{model_str}\n"))
-            elapsed_line = f"   Elapsed: {node.elapsed}"
-            if node.tool_count:
-                elapsed_line += f"  Tools: {node.tool_count}"
-            if node.last_tool:
-                # Truncate long tool names
-                tool_short = node.last_tool[:40] + ("..." if len(node.last_tool) > 40 else "")
-                elapsed_line += f"  Last: {tool_short}"
-            parts.append(("class:tree.idle", elapsed_line + "\n\n"))
 
-            # ── Running agent: show reasoning / thinking ──
+            # Token/cost bar
+            info_line = f"   ⏱ {node.elapsed}"
+            if node.tool_count:
+                info_line += f"  🔧 {node.tool_count} tools"
+            ti = node.tokens_in
+            to = node.tokens_out if node.tokens_out else 0
+            if ti or to:
+                info_line += f"  📊 in:{ti/1000:.1f}K" if ti >= 1000 else f"  📊 in:{ti}"
+                info_line += f" out:{to/1000:.1f}K" if to >= 1000 else f" out:{to}"
+            if node.cost_usd > 0:
+                info_line += f"  💰 ${node.cost_usd:.4f}"
+            parts.append(("class:tree.idle", info_line + "\n\n"))
+
+            # ── Running agent: thinking ──
             if node.status == "running":
                 if reasoning:
-                    # Show the live reasoning/thinking text
                     parts.append(("class:tree.running", "  💭 Thinking:\n"))
                     parts.append(("class:tree.reasoning", f"  {reasoning}\n"))
                 else:
                     parts.append(("class:tree.running", "  ⚡ Running — waiting for first action...\n"))
-                # Show recent tool calls if available
+
                 recent = node.recent_tools if node.recent_tools else (
                     detail.get("recent_tools", []) if detail else []
                 )
                 if recent:
                     parts.append(("class:tree.idle", "\n  Recent tools:\n"))
-                    for tool_name, tool_preview in recent[-5:]:  # last 5
-                        emoji = "🔧"
-                        if "search" in tool_name or "find" in tool_name:
-                            emoji = "🔍"
-                        elif "read" in tool_name:
-                            emoji = "📖"
-                        elif "terminal" in tool_name or "bash" in tool_name:
-                            emoji = "⚡"
-                        elif "write" in tool_name or "patch" in tool_name:
-                            emoji = "✏️"
-                        elif "delegate" in tool_name:
-                            emoji = "🔀"
-                        elif "browser" in tool_name:
-                            emoji = "🌐"
-                        elif "think" in tool_name:
-                            emoji = "💭"
-                        tool_line = f"    {emoji} {tool_name}"
+                    for tool_name, tool_preview in recent[-5:]:
+                        tool_emoji = "🔧" if "search" not in tool_name and "read" not in tool_name and "terminal" not in tool_name else \
+                                     "🔍" if "search" in tool_name else \
+                                     "📖" if "read" in tool_name else \
+                                     "⚡" if "terminal" in tool_name else "🔧"
+                        tool_line = f"    {tool_emoji} {tool_name}"
                         if tool_preview:
                             preview_trunc = tool_preview[:45] + ("..." if len(tool_preview) > 45 else "")
                             tool_line += f": {preview_trunc}"
                         parts.append(("class:tree.idle", tool_line + "\n"))
 
-            # ── Completed agent: show summary ──
+            # ── Completed agent: summary ──
             elif node.status == "completed":
                 if summary_text:
-                    summary_short = summary_text[:500]
+                    summary_short = summary_text[:800]
                     parts.append(("class:tree.completed", f"  ✓ {summary_short}\n"))
                 elif reasoning:
                     parts.append(("class:tree.reasoning", f"  {reasoning}\n"))
                 else:
                     parts.append(("class:tree.completed", "  ✓ Completed successfully.\n"))
 
-            # ── Failed / error ──
+            # ── Failed ──
             elif node.status in ("failed", "error", "timeout"):
-                error_text = summary_text or detail.get("error", "") if detail else ""
+                error_text = summary_text or (detail.get("error", "") if detail else "")
                 parts.append(("class:tree.failed", f"  ✗ {node.status.upper()}"))
                 if error_text:
-                    parts.append(("class:tree.failed", f": {error_text[:200]}"))
+                    parts.append(("class:tree.failed", f": {error_text[:300]}"))
                 parts.append(("", "\n"))
 
-            # ── Interrupted ──
-            elif node.status == "interrupted":
-                parts.append(("class:tree.idle", "  ⏸ Interrupted\n"))
-                if summary_text:
-                    parts.append(("class:tree.idle", f"  {summary_text[:300]}\n"))
+            # ── Messages from agent ──
+            if messages:
+                parts.append(("class:tree.idle", "\n  ── Messages ──\n"))
+                for msg in messages[-3:]:  # last 3 messages
+                    role = msg.get("role", "")
+                    content = msg.get("content", "")
+                    if isinstance(content, str) and content.strip():
+                        trunc = content[:200] + ("..." if len(content) > 200 else "")
+                        parts.append(("class:tree.idle", f"  [{role}] {trunc}\n"))
 
+            # Footer hint
+            parts.append(("class:tree.idle", f"\n {_KEYBINDING_HINT}\n"))
             return FormattedText(parts)
 
     @property
@@ -415,27 +468,27 @@ class SubagentTreePanel:
 # ── Tree style dict ───────────────────────────────────────────────────────
 
 TREE_STYLES = {
-    "tree.header": "bold #FFD700",          # yellow bold
+    "tree.header": "bold #FFD700",
     "tree.empty": "#666666",
-    "tree.running": "#00ff00",              # green
-    "tree.completed": "#888888",            # grey
-    "tree.failed": "#ff4444",               # red
-    "tree.idle": "#aaaaaa",                  # light grey
-    "tree.selected": "bg:#0044aa #ffffff bold",  # white on blue
-    "tree.reasoning": "#FFF8DC",             # cornsilk
-    "tree.border": "#FFFF00",                # yellow border
+    "tree.running": "#00ff00",
+    "tree.completed": "#888888",
+    "tree.failed": "#ff4444",
+    "tree.idle": "#aaaaaa",
+    "tree.selected": "bg:#0044aa #ffffff bold",
+    "tree.reasoning": "#FFF8DC",
+    "tree.border": "#FFFF00",
 }
 
 
-# ── Build the split-pane layout ───────────────────────────────────────────
+# ── Build the full-screen split-pane layout ───────────────────────────────
 
 def build_tree_split_layout(panel: SubagentTreePanel) -> Container:
-    """Build a VSplit layout: tree on the left, reasoning on the right."""
+    """Build a VSplit layout: tree on the left, output on the right (full-screen)."""
 
     tree_control = FormattedTextControl(panel.render_tree)
     tree_window = Window(
         content=tree_control,
-        width=Dimension(preferred=_MAX_TREE_WIDTH, min=25, max=50),
+        width=Dimension(preferred=_MAX_TREE_WIDTH, min=28, max=55),
         height=Dimension(min=8),
         wrap_lines=True,
     )
@@ -450,17 +503,17 @@ def build_tree_split_layout(panel: SubagentTreePanel) -> Container:
     # Left panel: tree in a yellow frame
     left_frame = Frame(
         tree_window,
-        title="\u2695 Agents",
+        title="⚕ Agents",
         style="class:tree.border",
-        width=Dimension(preferred=_MAX_TREE_WIDTH, min=27, max=52),
+        width=Dimension(preferred=_MAX_TREE_WIDTH, min=30, max=57),
     )
 
-    # Right panel: reasoning
+    # Right panel: output with toggle
+    right_title = "Subagent Output (Tab: Show/Hide)" if panel.show_output else "Subagent Output (Hidden — Tab to show)"
     right_frame = Frame(
         reasoning_window,
-        title="Subagent Output",
+        title=right_title,
         style="class:tree.border",
     )
 
-    # Side-by-side layout
     return VSplit([left_frame, right_frame])

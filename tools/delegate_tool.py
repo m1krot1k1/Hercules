@@ -180,7 +180,13 @@ def _register_subagent(record: Dict[str, Any]) -> None:
         _active_subagents[sid] = record
 
 
-def _unregister_subagent(subagent_id: str, summary: str = "") -> None:
+def _unregister_subagent(
+    subagent_id: str,
+    summary: str = "",
+    tokens_in: int = 0,
+    tokens_out: int = 0,
+    cost_usd: float = 0.0,
+) -> None:
     with _active_subagents_lock:
         rec = _active_subagents.get(subagent_id)
         if rec is not None:
@@ -188,6 +194,9 @@ def _unregister_subagent(subagent_id: str, summary: str = "") -> None:
             rec["completed_at"] = round(time.monotonic(), 1)
             if summary:
                 rec["summary"] = summary
+            rec["tokens_in"] = int(tokens_in) if tokens_in else rec.get("tokens_in", 0)
+            rec["tokens_out"] = int(tokens_out) if tokens_out else rec.get("tokens_out", 0)
+            rec["cost_usd"] = float(cost_usd) if cost_usd else rec.get("cost_usd", 0.0)
             # Keep in registry for tree display; cleaned up
             # after TUI session or by _gc_completed_subagents()
 
@@ -1873,9 +1882,21 @@ def _run_single_child(
             except Exception as e:
                 logger.debug("Progress callback completion failed: %s", e)
 
-        # Update TUI registry: mark as completed with summary for tree panel
+        # Update TUI registry: mark as completed with summary + token/cost stats for tree panel
         if _subagent_id:
-            _unregister_subagent(_subagent_id, summary=summary if status == "completed" else "")
+            _unregister_subagent(
+                _subagent_id,
+                summary=summary if status == "completed" else "",
+                tokens_in=(
+                    int(_input_tokens) if isinstance(_input_tokens, (int, float)) else 0
+                ),
+                tokens_out=(
+                    int(_output_tokens) if isinstance(_output_tokens, (int, float)) else 0
+                ),
+                cost_usd=(
+                    float(_cost_usd) if isinstance(_cost_usd, (int, float)) else 0.0
+                ) if _cost_usd is not None else 0.0,
+            )
 
         return entry
 

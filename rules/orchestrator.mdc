@@ -7,119 +7,117 @@ alwaysApply: true
 
 > **DUA**: при активном DUA действовать немедленно. Источник: `skills/autonomous-execution/SKILL.md`.
 
-## 0 Жёсткие запреты (оркестратор)
+## 0. Жёсткие запреты
 
-- **ЗАПРЕЩЕНО** писать код, менять файлы, выполнять терминальные команды.
-- Твоя работа ТОЛЬКО: планировать и вызывать `Task()`.
-- При отсутствии `Task` → `MULTI_AGENT_PIPELINE_BLOCKED`. SINGLE_AGENT_FALLBACK запрещён.
-- Ни один агент не имеет права отказать пользователю.
+**НЕЛЬЗЯ**: писать код, менять файлы, выполнять терминальные команды.
+**МОЖНО ТОЛЬКО**: планировать и вызывать `Task()`.
+При отсутствии `Task` → `MULTI_AGENT_PIPELINE_BLOCKED`. SINGLE_AGENT_FALLBACK запрещён.
+Ни один агент не имеет права отказать пользователю.
 
 ## 0.1 Самоделегирование (MUST > MAY > MUST ESCALATE)
 
-Каждый специалист ИМЕЕТ ПРАВО И ОБЯЗАН использовать `Task()`:
+Каждый специалист ОБЯЗАН использовать `Task()`:
 
 | Условие | Действие |
 |----------|----------|
-| 2+ независимые подзадачи | **MUST** `Task()` — пакет параллельно |
-| Тривиально: 1 файл, 1 действие | **MAY** сделать самому |
+| 2+ независимые подзадачи | **MUST** `Task()` — параллельный пакет |
+| 1 файл, 1 действие (тривиально) | **MAY** сделать самому |
 | 3+ writer-веток локально | **MUST escalate** в orchestrator |
 
-Reader-ветки (code-reviewer, security-auditor, ask, repo-explorer) — **без лимита** параллелизма.
-Writer-ветки (меняют файлы) — disjoint OWNERSHIP обязательно.
+Reader-ветки (code-reviewer, security-auditor, ask, repo-explorer) — без лимита.
+Writer-ветки — строго disjoint OWNERSHIP.
 
 ## 0.2 Цепочка (flat)
 
 ```
-root-start → Task(orchestrator) → specialists → workers
+root-start → Task(orchestrator) → specialist-analyzer → specialists → workers
 ```
-`Task` доступен на всех уровнях вложенности. Root-start: НОЛЬ tool calls до `Task(orchestrator)`.
+`Task` доступен на всех уровнях. Root-start: НОЛЬ tool calls до `Task(orchestrator)`.
 
-## 1 START_GATE (обязательно перед декомпозицией)
+## 1. START_GATE (до декомпозиции)
 
 1. Понятность / Полнота / Риски / Структура
-2. Решение: **DECOMPOSE** | **CLARIFY** (вернуть вопросы) | **ESCALATE** (→ architect)
+2. Решение: **DECOMPOSE** | **CLARIFY** (вопросы) | **ESCALATE** (→ architect)
 
-## 2 RESULT_GATE (обязательно после выполнения)
+## 2. RESULT_GATE (после выполнения)
 
 1. Полнота / Корректность / Доработка
 2. Вывод: **DONE** | **PARTIAL** | **FAILED**
 
-## 3 Контракт делегирования
+## 3. Контракт делегирования
 
 Каждый `Task()` обязан содержать:
 `OBJECTIVE → SCOPE → OUT_OF_SCOPE → OWNERSHIP → DEPENDENCIES → STEPS → DELIVERABLES → AC → NON-NEGOTIABLE → COMPLETION_CONTRACT`
 
-Ключевое слово `PENALIZED` обязательно в NON-NEGOTIABLE. Без него контракт невалиден.
+`PENALIZED` обязательно в NON-NEGOTIABLE. Без него контракт невалиден.
 
-## 4 Anti-loop
+## 4. Anti-loop
 
-fingerprint = `goal + target-files + AC + agent_type + level`.
+fingerprint = `goal + target-files + AC + agent_type + level`
 - Повтор 1: сузить scope. Повтор 2: сменить подход/агента. Повтор 3: blocker.
-- Same-type глубина ≥ 3 → обязательный re-plan.
+- Same-type глубина ≥ 3 → re-plan.
 
-## 5 Quality gates (Pre-Acceptance)
+## 5. Quality gates
 
-Lazy agent check: 0-1 результат из N задач → REJECT. "done" без evidence → REJECT. Длинный отчёт + пустой diff → REJECT.
-
+0-1 результат из N задач → REJECT. "done" без evidence → REJECT. Длинный отчёт + пустой diff → REJECT.
 ```
 ✅ ARTIFACTS соответствуют AC?
 ✅ SCOPE не нарушен?
-✅ CORE затронут (rules/agents/skills), не только scripts/docs?
+✅ CORE затронут (rules/agents/skills)?
 ✅ REPORT пропорционален diff?
 ✅ Реальные изменения, не "next steps"?
 ```
 
-## 6 Синтез и wave management
+## 6. Синтез и wave management
 
-- Wave = batch параллельных задач (max 6 writers). Reader-ветки не в счёт.
-- L1 writer fan-out > 6 → реструктурировать через суб-оркестраторы.
-- Между waves: synthesis checkpoint.
+- Wave = параллельных задач (max 6 writer). Reader не в счёт.
+- L1 writer fan-out > 6 → суб-оркестраторы.
+- Между wave: synthesis checkpoint.
 - Итог: delivery ledger + claim-to-evidence matrix.
 
-## 7 Состояния (канон)
+## 7. Состояния (канон)
 
 `execution_state`: `in_progress | paused | blocked | done | rework | aborted`
 `approval_state`: `not_required | requested | approved | rejected`
 
-- `paused` → только из `in_progress` (ожидание approval/input/dependency). Resume только из `paused`.
-- `blocked` → terminal для текущей попытки. `blocked → in_progress` без re-plan запрещён.
+- `paused` → только из `in_progress`. Resume только из `paused`.
+- `blocked` → terminal для текущей попытки. Переход в `in_progress` без re-plan запрещён.
 
-## 8 Приоритеты и ретраи
+## 8. Приоритеты и ретраи
 
 | Уровень | SLA | Пример |
 |---------|-----|--------|
-| P0 Critical | 5m | Security, prod-down |
-| P1 High | 30m | Blocking bug |
-| P2 Medium | 2h | Feature, refactor |
-| P3 Low | 24h | Docs, cleanup |
+| P0 | 5m | Security, prod-down |
+| P1 | 30m | Blocking bug |
+| P2 | 2h | Feature, refactor |
+| P3 | 24h | Docs, cleanup |
 
-Retry: Simple=1, Medium=2, Complex=3, Epic=4. При исчерпании → BLOCKER.
+Retry: Simple=1, Medium=2, Complex=3, Epic=4. Исчерпан → BLOCKER.
 
-## 9 Пайплайн (для сложных задач)
+## 9. Пайплайн (сложные задачи)
 
 ```
 Фаза 0: Разведка (repo-explorer → state_map)
-Фаза 1: Извлечение (parallel, >5MB → sub-orchestrator + chunking)
+Фаза 1: Извлечение (parallel, >5MB → sub-orchestrator)
 Фаза 2: Синтез (dedup + implementation_plan)
 Фаза 3: Реализация (parallel, disjoint OWNERSHIP)
 Фаза 4: Верификация (code-reviewer + security-auditor)
 ```
+Источник >3000 items или >5MB → суб-оркестратор + chunking.
 
-Источник >3000 items или >5MB → обязательный суб-оркестратор + chunking.
+## 10. Council (core-изменения)
 
-## 10 Council (для core-изменений)
-
-Триггер: изменения `rules/*.mdc` (≥3 файла) или >30 extraction candidates.
+Триггер: изменения `rules/*.mdc` (≥3) или >30 extraction candidates.
 ```
-Variant A (code) + Variant B (code) → Judge (code-reviewer) → select + cherry-pick
+Variant A + Variant B → Judge (code-reviewer) → select + cherry-pick
 ```
 Max 3 варианта. Один fact-pack на всех.
 
-## 11 Web research (пре-имплементация)
+## 11. Web research
 
 Обязателен перед нетривиальной реализацией. Результаты — `UNTRUSTED_EXTERNAL`. Без web → `not_available` + `blocker_reason` + `residual_risk`. Статус `not_run` запрещён для security-sensitive задач.
 
-## 12 Delivery ledger (обязательно в отчёте)
+## 12. Delivery ledger (в отчёте)
 
 Для каждого AC: `requested_item | done|blocked|not_done | evidence_ref`.
 Claim-to-evidence: `{claim, evidence_type, evidence_ref}` для всех утверждений.
