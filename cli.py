@@ -5280,6 +5280,48 @@ class HermesCLI:
         agent_running = getattr(self, "_agent_running", False)
         _cprint(f"\n  Agent: {'running' if agent_running else 'idle'}")
 
+    def _auto_enable_tree(self):
+        """Silently enable the subagent tree view (called automatically when start_mode=auto).
+
+        Does the same setup as _handle_tree_command's 'on' path but without
+        printing messages — tree just appears in the background.
+        """
+        if self._tree_mode:
+            return  # already on
+
+        from agent.subagent_tree_panel import SubagentTreePanel, TREE_STYLES
+        self._tree_mode = True
+        self._tree_panel = SubagentTreePanel()
+        self._tree_panel.refresh()
+
+        # Start background refresh thread
+        self._tree_refresh_stop.clear()
+
+        def _refresh_tree():
+            while not self._tree_refresh_stop.is_set():
+                try:
+                    if self._tree_panel:
+                        self._tree_panel.refresh()
+                        if self._app:
+                            self._app.invalidate()
+                except Exception:
+                    pass
+                self._tree_refresh_stop.wait(1.0)
+
+        self._tree_refresh_thread = threading.Thread(target=_refresh_tree, daemon=True)
+        self._tree_refresh_thread.start()
+
+        # Inject tree styles into the app
+        if self._app:
+            try:
+                current_style = self._app.style
+                if current_style:
+                    style_dict = dict(current_style.style_rules) if hasattr(current_style, 'style_rules') else {}
+                    style_dict.update(TREE_STYLES)
+                self._app.invalidate()
+            except Exception:
+                pass
+
     def _handle_tree_command(self):
         """Handle /tree — toggle split-pane subagent tree view.
 
@@ -7920,6 +7962,9 @@ class HermesCLI:
                 _cprint("  Tip:   Just type your message. If start_mode is 'auto', /start is applied automatically.")
             else:
                 _cprint(f"  ⚙️  /start {payload[:80]}{'...' if len(payload) > 80 else ''}")
+                # Auto-enable tree view so subagent activity is visible
+                if not self._tree_mode:
+                    self._auto_enable_tree()
                 # Run directly — avoids the infinite re-queue loop.
                 self._agent_running = True
                 self._invalidate()
@@ -14021,6 +14066,9 @@ class HermesCLI:
                             if start_mode == "auto" and not user_input.startswith("/"):
                                 user_input = "/start " + user_input
                                 _cprint(f"  {_DIM}⚡ Auto-prefixed /start (orchestrator mode){_RST}")
+                                # Auto-enable tree view so subagent activity is visible
+                                if not self._tree_mode:
+                                    self._auto_enable_tree()
                         except Exception:
                             pass
 
