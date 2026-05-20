@@ -1,2 +1,9 @@
 /.DS_Store
 cursor-main
+.venv311_correct
+__pycache__/
+*.pyc
+.env
+build/
+dist/
+*.egg-info/

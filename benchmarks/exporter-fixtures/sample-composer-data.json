@@ -1,0 +1,247 @@
+{
+  "allComposers": [
+    {
+      "type": "head",
+      "composerId": "root-001",
+      "name": "Full repository analysis and improvements",
+      "subtitle": "Root conversation entry for the agent run",
+      "createdAt": 1774600000000,
+      "lastUpdatedAt": 1774600005000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 18.5,
+      "totalLinesAdded": 0,
+      "totalLinesRemoved": 0,
+      "filesChangedCount": 0,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 2,
+      "referencedPlans": [],
+      "activeBranch": {
+        "branchName": "main",
+        "lastInteractionAt": 1774600005000
+      },
+      "branches": [
+        {
+          "branchName": "main",
+          "lastInteractionAt": 1774600005000
+        },
+        {
+          "branchName": "dev",
+          "lastInteractionAt": 1774600004000
+        }
+      ]
+    },
+    {
+      "type": "head",
+      "composerId": "start-001",
+      "name": "Root start envelope",
+      "subtitle": "Packages the task and opens one orchestrator",
+      "createdAt": 1774600010000,
+      "lastUpdatedAt": 1774600015000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 22.0,
+      "totalLinesAdded": 0,
+      "totalLinesRemoved": 0,
+      "filesChangedCount": 0,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 1,
+      "referencedPlans": [],
+      "branches": [
+        {
+          "branchName": "dev",
+          "lastInteractionAt": 1774600015000
+        }
+      ],
+      "subagentInfo": {
+        "parentComposerId": "root-001",
+        "subagentTypeName": "start",
+        "parentRequestId": "req-start-parent",
+        "rootParentRequestId": "req-root",
+        "toolCallId": "call_start_001"
+      }
+    },
+    {
+      "type": "head",
+      "composerId": "orchestrator-001",
+      "name": "Coordinated multi-branch plan",
+      "subtitle": "Splits work across code and test-specialist",
+      "createdAt": 1774600020000,
+      "lastUpdatedAt": 1774600025000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 33.7,
+      "totalLinesAdded": 3,
+      "totalLinesRemoved": 1,
+      "filesChangedCount": 2,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 2,
+      "referencedPlans": [],
+      "branches": [
+        {
+          "branchName": "dev",
+          "lastInteractionAt": 1774600025000
+        }
+      ],
+      "subagentInfo": {
+        "parentComposerId": "start-001",
+        "subagentTypeName": "orchestrator",
+        "parentRequestId": "req-orchestrator-parent",
+        "rootParentRequestId": "req-root",
+        "toolCallId": "call_orchestrator_001"
+      }
+    },
+    {
+      "type": "head",
+      "composerId": "code-001",
+      "name": "Implementation branch",
+      "subtitle": "Edits rules/orchestrator.mdc and README.md",
+      "createdAt": 1774600030000,
+      "lastUpdatedAt": 1774600035000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 41.2,
+      "totalLinesAdded": 42,
+      "totalLinesRemoved": 7,
+      "filesChangedCount": 2,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 0,
+      "referencedPlans": [],
+      "branches": [
+        {
+          "branchName": "dev",
+          "lastInteractionAt": 1774600035000
+        }
+      ],
+      "subagentInfo": {
+        "parentComposerId": "orchestrator-001",
+        "subagentTypeName": "code",
+        "parentRequestId": "req-code-parent",
+        "rootParentRequestId": "req-root",
+        "toolCallId": "call_code_001"
+      }
+    },
+    {
+      "type": "head",
+      "composerId": "test-001",
+      "name": "Verification branch",
+      "subtitle": "Adds tests and validates orchestration behavior",
+      "createdAt": 1774600031000,
+      "lastUpdatedAt": 1774600036000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 27.4,
+      "totalLinesAdded": 18,
+      "totalLinesRemoved": 0,
+      "filesChangedCount": 1,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 0,
+      "referencedPlans": [],
+      "branches": [
+        {
+          "branchName": "dev",
+          "lastInteractionAt": 1774600036000
+        }
+      ],
+      "subagentInfo": {
+        "parentComposerId": "orchestrator-001",
+        "subagentTypeName": "test-specialist",
+        "parentRequestId": "req-test-parent",
+        "rootParentRequestId": "req-root",
+        "toolCallId": "call_test_001"
+      }
+    },
+    {
+      "type": "head",
+      "composerId": "chat-001",
+      "name": "Plain chat root that should be filtered by default",
+      "subtitle": "Non-agent conversation",
+      "createdAt": 1774600040000,
+      "lastUpdatedAt": 1774600045000,
+      "unifiedMode": "chat",
+      "forceMode": "chat",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 5.0,
+      "totalLinesAdded": 0,
+      "totalLinesRemoved": 0,
+      "filesChangedCount": 0,
+      "isArchived": false,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 0,
+      "referencedPlans": [],
+      "branches": []
+    },
+    {
+      "type": "head",
+      "composerId": "archived-001",
+      "name": "Archived implementation branch",
+      "subtitle": "Should be filtered unless include-archived is enabled",
+      "createdAt": 1774600050000,
+      "lastUpdatedAt": 1774600055000,
+      "unifiedMode": "agent",
+      "forceMode": "edit",
+      "hasUnreadMessages": false,
+      "contextUsagePercent": 10.0,
+      "totalLinesAdded": 5,
+      "totalLinesRemoved": 2,
+      "filesChangedCount": 1,
+      "isArchived": true,
+      "isDraft": false,
+      "isWorktree": false,
+      "worktreeStartedReadOnly": false,
+      "isSpec": false,
+      "isProject": false,
+      "isBestOfNSubcomposer": false,
+      "numSubComposers": 0,
+      "referencedPlans": [],
+      "branches": [],
+      "subagentInfo": {
+        "parentComposerId": "orchestrator-001",
+        "subagentTypeName": "code",
+        "parentRequestId": "req-archived-parent",
+        "rootParentRequestId": "req-root",
+        "toolCallId": "call_archived_001"
+      }
+    }
+  ]
+}
