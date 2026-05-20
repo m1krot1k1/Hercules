@@ -137,7 +137,7 @@ class SubagentTreePanel:
                 visible.append(rec)
 
         with self._lock:
-            # Preserve expanded state
+            # Preserve expanded state BEFORE building new nodes
             old_expanded = {n.subagent_id for n in self.flat_nodes if n.expanded}
             old_selected = self._selected_id
 
@@ -155,13 +155,19 @@ class SubagentTreePanel:
             for node in by_id.values():
                 node.children = children_by_parent.get(node.subagent_id, [])
 
-            self.nodes = children_by_parent.get(None, [])
-            self._rebuild_flat()
-
-            # Restore expanded state
-            for node in self.flat_nodes:
+            # ── Restore expanded state BEFORE _rebuild_flat ───────────
+            # The old code called _rebuild_flat() TWICE — once before restoring
+            # expanded and once after.  Between those two calls render_tree()
+            # (driven by prompt_toolkit's refresh from another thread) could
+            # snapshot a collapsed tree, causing the visual "tree collapse on
+            # every refresh" bug.  Now we restore expanded first, then build
+            # flat_nodes exactly once.
+            for node in by_id.values():
                 if node.subagent_id in old_expanded:
                     node.expanded = True
+
+            self.nodes = children_by_parent.get(None, [])
+            self._rebuild_flat()
 
             # Restore selection
             if old_selected:
