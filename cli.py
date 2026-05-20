@@ -5247,24 +5247,32 @@ class HermesCLI:
         print(f"  ✅ Stopped {killed} process(es).")
 
     def _handle_agents_command(self):
-        """Handle /agents — show background processes and agent status."""
+        """Handle /agents — show subagent tree and background processes."""
+        from agent.subagent_tree import render_subagent_tree
         from tools.process_registry import format_uptime_short, process_registry
 
+        # ── Subagent delegation tree ────────────────────────────────────
+        tree = render_subagent_tree(gc=True)
+        if tree:
+            for line in tree.split("\n"):
+                _cprint(line)
+        else:
+            _cprint("  No subagents active.")
+
+        # ── Background processes ────────────────────────────────────────
         processes = process_registry.list_sessions()
-        running = [p for p in processes if p.get("status") == "running"]
-        finished = [p for p in processes if p.get("status") != "running"]
+        if processes:
+            running = [p for p in processes if p.get("status") == "running"]
+            if running:
+                _cprint(f"\n  Background processes: {len(running)} running")
+                for p in running:
+                    cmd = p.get("command", "")[:80]
+                    up = format_uptime_short(p.get("uptime_seconds", 0))
+                    _cprint(f"    {p.get('session_id', '?')} · {up} · {cmd}")
 
-        _cprint(f"  Running processes: {len(running)}")
-        for p in running:
-            cmd = p.get("command", "")[:80]
-            up = format_uptime_short(p.get("uptime_seconds", 0))
-            _cprint(f"    {p.get('session_id', '?')} · {up} · {cmd}")
-
-        if finished:
-            _cprint(f"  Recently finished: {len(finished)}")
-
+        # ── Agent status ────────────────────────────────────────────────
         agent_running = getattr(self, "_agent_running", False)
-        _cprint(f"  Agent: {'running' if agent_running else 'idle'}")
+        _cprint(f"\n  Agent: {'running' if agent_running else 'idle'}")
 
     def _handle_paste_command(self):
         """Handle /paste — explicitly check clipboard for an image.
