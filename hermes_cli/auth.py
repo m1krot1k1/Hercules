@@ -6371,8 +6371,8 @@ def _xai_oauth_exchange_code_for_tokens(
     if not code_verifier:
         raise AuthError(
             "xAI token exchange refused locally: PKCE code_verifier is empty. "
-            "This is a bug in Hermes — please report at "
-            "https://github.com/NousResearch/hermes-agent/issues/26990.",
+            "This is a bug in Hercules — please report at "
+            "https://github.com/m1krot1k1/Hercules/issues/26990.",
             provider="xai-oauth",
             code="xai_pkce_verifier_missing",
         )
