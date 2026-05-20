@@ -37,8 +37,8 @@ _MAX_TREE_WIDTH = 72
 _MAX_GOAL_CHARS = 28
 
 # How long (seconds) after completion a subagent stays in the tree
-# before GC sweeps it.  Matches _MAX_COMPLETED_AGE in delegate_tool.py.
-_VISIBLE_AFTER_COMPLETION = 60.0
+# before GC sweeps it.  Set to 24h for session-persistent visibility.
+_VISIBLE_AFTER_COMPLETION = 86400.0
 
 _tick_counter: List[int] = [0]
 

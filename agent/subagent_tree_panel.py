@@ -323,7 +323,12 @@ class SubagentTreePanel:
                 if node.last_tool:
                     parts.append(("class:tree.idle", f"  Last tool: {node.last_tool}"))
             elif node.status == "completed":
-                parts.append(("class:tree.completed", "  Completed."))
+                # Try to show actual summary from the registry
+                if detail and detail.get("summary"):
+                    summary_text = detail["summary"][:500]
+                    parts.append(("class:tree.reasoning", f"  {summary_text}"))
+                else:
+                    parts.append(("class:tree.completed", "  Completed."))
             elif node.status in ("failed", "error", "timeout"):
                 parts.append(("class:tree.failed", f"  {node.status.upper()}"))
 
