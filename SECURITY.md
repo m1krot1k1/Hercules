@@ -6,7 +6,7 @@ scope for vulnerability reports.
 
 ## 1. Reporting a Vulnerability
 
-Report privately via [GitHub Security Advisories](https://github.com/NousResearch/hermes-agent/security/advisories/new)
+Report privately via [GitHub Security Advisories](https://github.com/m1krot1k1/Hercules/security/advisories/new)
 or **security@nousresearch.com**. Do not open public issues for
 security vulnerabilities. **Hercules Agent does not operate a bug
 bounty program.**

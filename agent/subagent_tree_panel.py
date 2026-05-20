@@ -63,6 +63,10 @@ class TreeNode:
         "tool_count", "last_tool", "recent_tools", "model", "parent_id",
         "children", "expanded", "reasoning",
         "tokens_in", "tokens_out", "cost_usd", "messages",
+        # Rollup metrics
+        "total_tokens_rollup", "total_cost_rollup", "total_tools_rollup", "total_time_rollup",
+        # Display toggles
+        "show_output", "show_thinking", "show_tool_calls", "show_intermediate",
     )
 
     def __init__(self, data: Dict[str, Any]):
@@ -84,6 +88,16 @@ class TreeNode:
         self.tokens_out = data.get("tokens_out", 0)
         self.cost_usd = data.get("cost_usd", 0.0)
         self.messages = data.get("messages", [])
+        # Rollup metrics (computed later)
+        self.total_tokens_rollup = self.tokens_in + self.tokens_out
+        self.total_cost_rollup = self.cost_usd
+        self.total_tools_rollup = self.tool_count
+        self.total_time_rollup = 0.0
+        # Display toggles
+        self.show_output = False  # Toggle for showing/hiding agent output in TUI
+        self.show_thinking = False
+        self.show_tool_calls = False
+        self.show_intermediate = False
 
     @property
     def icon(self) -> str:
@@ -113,12 +127,30 @@ class TreeNode:
     @property
     def total_tokens(self) -> int:
         """Tokens used by this node (self + cumulative children)."""
-        return self.tokens_in + self.tokens_out
+        return self.total_tokens_rollup
 
     @property
     def total_cost(self) -> float:
         """Cost USD for this node (self + cumulative children)."""
-        return self.cost_usd
+        return self.total_cost_rollup
+    
+    @property
+    def total_tools(self) -> int:
+        """Total tools called by this node and children."""
+        return self.total_tools_rollup
+    
+    @property
+    def total_time(self) -> float:
+        """Total execution time for this node and children."""
+        return self.total_time_rollup
+    
+    def total_tools(self) -> int:
+        """Total tools called by this node and children."""
+        return self.total_tools_rollup
+    
+    def total_time(self) -> float:
+        """Total execution time for this node and children."""
+        return self.total_time_rollup
 
     def tokens_str(self) -> str:
         t = self.total_tokens
@@ -133,6 +165,27 @@ class TreeNode:
         if c < 0.01:
             return "<$0.01"
         return f"${c:.2f}"
+    
+    def compute_rollup(self):
+        """Recursively compute rollup metrics from children."""
+        # Start with direct metrics
+        total_tokens = self.tokens_in + self.tokens_out
+        total_cost = self.cost_usd
+        total_tools = self.tool_count
+        total_time = 0.0  # We don't have execution time yet
+        
+        # Add children rollup
+        for child in self.children:
+            child.compute_rollup()
+            total_tokens += child.total_tokens_rollup
+            total_cost += child.total_cost_rollup
+            total_tools += child.total_tools_rollup
+            total_time += child.total_time_rollup
+        
+        self.total_tokens_rollup = total_tokens
+        self.total_cost_rollup = total_cost
+        self.total_tools_rollup = total_tools
+        self.total_time_rollup = total_time
 
 
 # ── SubagentTreePanel ─────────────────────────────────────────────────────
@@ -157,6 +210,18 @@ class SubagentTreePanel:
     def toggle_output(self):
         """Toggle between Show Output and Hide Output modes."""
         self._show_output = not self._show_output
+
+    def toggle_agent_output(self, agent_id: str) -> bool:
+        """Toggle output visibility for a specific agent by ID.
+        
+        Returns True if agent was found and toggled, False otherwise.
+        """
+        with self._lock:
+            for node in self.flat_nodes:
+                if node.subagent_id == agent_id:
+                    node.show_output = not node.show_output
+                    return True
+            return False
 
     @property
     def show_output(self) -> bool:
@@ -202,6 +267,10 @@ class SubagentTreePanel:
 
             self.nodes = children_by_parent.get(None, [])
             self._rebuild_flat()
+
+            # Compute rollup metrics for root nodes
+            for node in self.nodes:
+                node.compute_rollup()
 
             if old_selected:
                 for i, n in enumerate(self.flat_nodes):
@@ -305,10 +374,16 @@ class SubagentTreePanel:
                     ("class:tree.idle", "   delegate_task for workers.\n"),
                 ])
 
-            ti, to, tc, rc, cc, fc = self._cumulative_totals()
+            # Get status counts and rollup totals
+            _, _, _, rc, cc, fc = self._cumulative_totals()
             parts: List[Tuple[str, str]] = []
 
-            # Header with cumulative totals
+            # Compute rollup totals from root nodes
+            total_tokens = sum(n.total_tokens_rollup for n in self.nodes)
+            total_cost = sum(n.total_cost_rollup for n in self.nodes)
+            total_tools = sum(n.total_tools_rollup for n in self.nodes)
+
+            # Header with rollup totals
             status_parts = []
             if rc:
                 status_parts.append(f"{rc}⚡")
@@ -317,10 +392,9 @@ class SubagentTreePanel:
             if fc:
                 status_parts.append(f"{fc}✗")
             status_str = " ".join(status_parts) if status_parts else "idle"
-            total_t = ti + to
-            total_t_str = f"{total_t/1000:.1f}K" if total_t >= 1000 else str(total_t)
-            header = f" ⚕ Agents ({status_str})  Σ{total_t_str}t {f'${tc:.2f}' if tc > 0 else ''}\n"
-            parts.append(("class:tree.header", header))
+            total_t_str = f"{total_tokens/1000:.1f}K" if total_tokens >= 1000 else str(total_tokens)
+            cost_str = f" ${total_cost:.2f}" if total_cost > 0 else ""
+            header = f" ⚕ Agents ({status_str}) Σ{total_t_str}t{cost_str}\n"
 
             for i, node in enumerate(self.flat_nodes):
                 is_selected = (i == self.selected_index)
@@ -345,14 +419,14 @@ class SubagentTreePanel:
 
                 # Per-agent info line: icon + goal + elapsed + tools + tokens + cost
                 info_parts = []
-                if node.tool_count:
-                    info_parts.append(f"{node.tool_count}t")
+                if node.total_tools_rollup:
+                    info_parts.append(f"{node.total_tools_rollup}t")
                 info_parts.append(node.elapsed)
                 tt = node.total_tokens
                 if tt:
                     info_parts.append(f"{tt/1000:.1f}Kt" if tt >= 1000 else f"{tt}t")
-                if node.cost_usd > 0:
-                    info_parts.append(f"${node.cost_usd:.3f}")
+                if node.total_cost_rollup > 0:
+                    info_parts.append(f"${node.total_cost_rollup:.3f}")
                 info = " ".join(info_parts)
                 line = f"{indent}{expand_marker}{node.icon} {node.goal} ({info})\n"
                 parts.append((style, line))
@@ -390,14 +464,14 @@ class SubagentTreePanel:
 
             # Token/cost bar
             info_line = f"   ⏱ {node.elapsed}"
-            if node.tool_count:
+            if node.total_tools_rollup:
                 info_line += f"  🔧 {node.tool_count} tools"
             ti = node.tokens_in
             to = node.tokens_out if node.tokens_out else 0
             if ti or to:
                 info_line += f"  📊 in:{ti/1000:.1f}K" if ti >= 1000 else f"  📊 in:{ti}"
                 info_line += f" out:{to/1000:.1f}K" if to >= 1000 else f" out:{to}"
-            if node.cost_usd > 0:
+            if node.total_cost_rollup > 0:
                 info_line += f"  💰 ${node.cost_usd:.4f}"
             parts.append(("class:tree.idle", info_line + "\n\n"))
 

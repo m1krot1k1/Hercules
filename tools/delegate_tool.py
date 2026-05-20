@@ -30,6 +30,12 @@ from concurrent.futures import (
 )
 from typing import Any, Dict, List, Optional
 
+from agent.telemetry_collector import (
+    AgentTelemetry,
+    calculate_rollup_metrics,
+    format_agent_metrics,
+    format_total_metrics,
+)
 from toolsets import TOOLSETS
 
 # Sentinel value used by the runtime provider system for providers that are
@@ -39,6 +45,121 @@ _RUNTIME_PROVIDER_CUSTOM = "custom"
 from tools import file_state
 from tools.terminal_tool import set_approval_callback as _set_subagent_approval_cb
 from utils import base_url_hostname, is_truthy_value
+
+# ---------------------------------------------------------------------------
+# Dynamic Agent Registry
+# ---------------------------------------------------------------------------
+# Maps agent names to their specifications.  Static agents (from agents/*.md)
+# are loaded at startup; dynamic agents are registered at runtime by
+# the MetaAnalysisAgent + AgentFactory pipeline.
+#
+# Each entry: agent_name -> {"name": str, "spec": dict, "registered_at": str}
+_AGENT_REGISTRY: Dict[str, Dict[str, Any]] = {}
+
+
+def _resolve_agent_name(agent_name: str) -> Optional[Dict[str, Any]]:
+    """Resolve an agent name to its specification.
+    
+    Checks the dynamic agent registry (_AGENT_REGISTRY) first,
+    then checks agent_factory's DYNAMIC_AGENTS, then falls back to
+    loading from the agents/ directory.
+    
+    Args:
+        agent_name: The name of the agent (kebab-case, without .md)
+        
+    Returns:
+        Agent specification dict or None if not found
+    """
+    # Check local dynamic registry first
+    if agent_name in _AGENT_REGISTRY:
+        return _AGENT_REGISTRY[agent_name]
+    
+    # Check agent_factory's DYNAMIC_AGENTS (for agents registered via AgentFactory)
+    try:
+        from agent.agent_factory import DYNAMIC_AGENTS
+        if agent_name in DYNAMIC_AGENTS:
+            return DYNAMIC_AGENTS[agent_name]
+    except ImportError:
+        pass
+    
+    # Try to load from agents/ directory
+    from hermes_constants import get_hermes_home
+    from pathlib import Path
+    
+    agents_dir = get_hermes_home() / "agents"
+    agent_file = agents_dir / f"{agent_name}.md"
+    
+    if agent_file.exists():
+        return {
+            "name": agent_name,
+            "spec": {"name": agent_name, "file_path": str(agent_file)},
+            "source": "file",
+        }
+    
+    return None
+
+
+def register_dynamic_agent(name: str, spec: Dict[str, Any]) -> None:
+    """Register a dynamically created agent.
+    
+    Called by AgentFactory after creating a new agent file.
+    Makes the agent available for delegate_task() calls.
+    
+    Args:
+        name: Agent name (kebab-case)
+        spec: Agent specification dict
+    """
+    from datetime import datetime
+    
+    _AGENT_REGISTRY[name] = {
+        "name": name,
+        "spec": spec,
+        "registered_at": datetime.utcnow().isoformat(),
+        "source": "dynamic",
+    }
+    
+    # Also register in the agent_factory's module-level registry
+    try:
+        from agent.agent_factory import register_dynamic_agent as _factory_register
+        _factory_register(name, spec)
+    except ImportError:
+        pass  # agent_factory might not be loaded yet
+    
+    logger.info(f"Registered dynamic agent in delegate_tool: {name}")
+
+
+def list_registered_agents() -> List[str]:
+    """List all registered agent names."""
+    return list(_AGENT_REGISTRY.keys())
+
+
+def load_static_agents() -> None:
+    """Load static agents from agents/*.md into the registry.
+    
+    Called at startup to populate _AGENT_REGISTRY with
+    the built-in and user-created agent definitions.
+    """
+    from hermes_constants import get_hermes_home
+    from pathlib import Path
+    
+    agents_dir = get_hermes_home() / "agents"
+    if not agents_dir.exists():
+        return
+    
+    for agent_file in agents_dir.glob("*.md"):
+        agent_name = agent_file.stem
+        if agent_name in {"README", "specialist-analyzer", "subagent-factory"}:
+            continue
+            
+        if agent_name not in _AGENT_REGISTRY:
+            _AGENT_REGISTRY[agent_name] = {
+                "name": agent_name,
+                "spec": {"name": agent_name, "file_path": str(agent_file)},
+                "registered_at": "static",
+                "source": "static",
+            }
+    
+    logger.info(f"Loaded {len(_AGENT_REGISTRY)} static agents into registry")
 
 
 # Tools that children must never have access to
@@ -138,6 +259,64 @@ _MAX_SPAWN_DEPTH_CAP = 3
 
 
 # ---------------------------------------------------------------------------
+# Telemetry tracking with rollup support
+# ---------------------------------------------------------------------------
+
+_telemetry_dict: Dict[str, AgentTelemetry] = {}
+
+
+def get_agent_telemetry(agent_id: str) -> Optional[AgentTelemetry]:
+    """Get telemetry for a specific agent by ID."""
+    return _telemetry_dict.get(agent_id)
+
+
+def get_telemetry_tree() -> Dict[str, Any]:
+    """
+    Build a tree structure from telemetry dict for display purposes.
+
+    Returns a nested dict with 'agent' and 'children' keys.
+    Only includes root agents (parent_id is None).
+    """
+    # First calculate all rollup metrics
+    for agent_id in list(_telemetry_dict.keys()):
+        if agent_id in _telemetry_dict:
+            try:
+                calculate_rollup_metrics(agent_id, _telemetry_dict)
+            except Exception as exc:
+                logger.debug("Rollup calculation failed for %s: %s", agent_id, exc)
+
+    # Build tree starting from root agents
+    roots = [a for a in _telemetry_dict.values() if a.parent_id is None]
+    if not roots:
+        return {}
+
+    def _build_node(agent: AgentTelemetry) -> Dict[str, Any]:
+        node = {
+            "agent": agent,
+            "children": []
+        }
+        for child_id in agent.children:
+            if child_id in _telemetry_dict:
+                node["children"].append(_build_node(_telemetry_dict[child_id]))
+        return node
+
+    # Return first root (or build forest if multiple roots)
+    if len(roots) == 1:
+        return _build_node(roots[0])
+    else:
+        return {"agent": None, "children": [_build_node(r) for r in roots]}
+
+
+def format_telemetry_summary(agent_id: str) -> str:
+    """Format telemetry summary for an agent including rollup."""
+    agent = _telemetry_dict.get(agent_id)
+    if not agent:
+        return "No telemetry available"
+    calculate_rollup_metrics(agent_id, _telemetry_dict)
+    return format_agent_metrics(agent)
+
+
+# ---------------------------------------------------------------------------
 # Runtime state: pause flag + active subagent registry
 #
 # Consumed by the TUI observability layer (overlay/control surface) and the
@@ -178,6 +357,24 @@ def _register_subagent(record: Dict[str, Any]) -> None:
         return
     with _active_subagents_lock:
         _active_subagents[sid] = record
+    
+    # Create telemetry entry
+    parent_id = record.get("parent_id")
+    agent_name = record.get("goal", sid)[:50]  # Use goal as name, truncated
+    telemetry = AgentTelemetry(
+        agent_id=sid,
+        agent_name=agent_name,
+        parent_id=parent_id,
+    )
+    # Set start_time from the record's started_at if available
+    started_at = record.get("started_at")
+    if started_at:
+        telemetry.start_time = started_at
+    _telemetry_dict[sid] = telemetry
+    
+    # Add this agent as child to parent
+    if parent_id and parent_id in _telemetry_dict:
+        _telemetry_dict[parent_id].children.append(sid)
 
 
 def _unregister_subagent(
@@ -199,6 +396,20 @@ def _unregister_subagent(
             rec["cost_usd"] = float(cost_usd) if cost_usd else rec.get("cost_usd", 0.0)
             # Keep in registry for tree display; cleaned up
             # after TUI session or by _gc_completed_subagents()
+
+    # Update telemetry with final metrics
+    if subagent_id in _telemetry_dict:
+        telemetry = _telemetry_dict[subagent_id]
+        telemetry.tokens_input = int(tokens_in) if tokens_in else telemetry.tokens_input
+        telemetry.tokens_output = int(tokens_out) if tokens_out else telemetry.tokens_output
+        telemetry.cost_usd = float(cost_usd) if cost_usd else telemetry.cost_usd
+        telemetry.execution_time = time.time() - telemetry.start_time if hasattr(telemetry, 'start_time') else 0.0
+        
+        # Recalculate rollup metrics for this agent and its ancestors
+        try:
+            calculate_rollup_metrics(subagent_id, _telemetry_dict)
+        except Exception as exc:
+            logger.debug("Rollup calculation failed for %s: %s", subagent_id, exc)
 
 
 def _mark_subagent_failed(subagent_id: str, error: str = "") -> None:
@@ -1897,6 +2108,32 @@ def _run_single_child(
                     float(_cost_usd) if isinstance(_cost_usd, (int, float)) else 0.0
                 ) if _cost_usd is not None else 0.0,
             )
+
+        # --- Verification Hook (Self-Evaluation & Cross-Verification) ---
+        # Check if verification is requested (e.g., via config or parameter)
+        # This is a hook point; actual verification logic is in agent/self_evaluation.py
+        _skip_verification = _kwargs.get("skip_verification", True)  # Default: skip for now
+        
+        if not _skip_verification and summary:
+            try:
+                # Lazy import to avoid circular dependencies
+                from agent.self_evaluation import SelfEvaluation
+                
+                # Initialize evaluator (in real scenario, agent_id and delegate_func needed)
+                # For now, we just mark that verification *could* happen here.
+                # The actual integration happens via AutonomyEngine in run_agent.py
+                
+                # Placeholder for verification result
+                entry["needs_correction"] = False
+                entry["verification_issues"] = []
+                
+                logger.info(f"Verification hook triggered for task {task_index}")
+                
+            except ImportError:
+                logger.debug("SelfEvaluation module not available for verification hook")
+            except Exception as e:
+                logger.warning(f"Verification hook error: {e}")
+        # --- End Verification Hook ---
 
         return entry
 
