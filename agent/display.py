@@ -701,9 +701,29 @@ class KawaiiSpinner:
         # Driving a \r-based animation here too causes visual overdraw: the
         # StdoutProxy injects newlines around each flush, so every frame lands
         # on a new line and overwrites the status bar.
+        #
+        # However, we still render the subagent delegation tree in this mode
+        # because it uses print_above() which writes through StdoutProxy and
+        # lands correctly as full lines above the prompt.
         if self._is_patch_stdout_proxy():
+            _subagent_tree_ticks = 0
+            _subagent_tree_last_text: str | None = None
             while self.running:
                 time.sleep(0.1)
+                _subagent_tree_ticks += 1
+                # Refresh subagent tree every ~10 ticks (≈1 second)
+                if _subagent_tree_ticks % 10 == 0:
+                    try:
+                        from agent.subagent_tree import render_subagent_tree
+                        do_gc = _subagent_tree_ticks % (10 * 30) == 0  # GC every ~30s
+                        tree = render_subagent_tree(gc=do_gc)
+                        if tree != _subagent_tree_last_text:
+                            _subagent_tree_last_text = tree
+                            if tree:
+                                for tree_line in tree.split("\n"):
+                                    self._write(f"  {tree_line}", flush=True)
+                    except Exception:
+                        pass  # Defensive — never let tree rendering kill the spinner
             return
 
         # Cache skin wings at start (avoid per-frame imports)

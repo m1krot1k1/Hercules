@@ -7853,14 +7853,30 @@ class HermesCLI:
         elif canonical == "start":
             # /start <task> — manually trigger the orchestrator chain.
             # This is the explicit form of what start_mode=auto does automatically.
+            # CRITICAL: Do NOT put the command back into _pending_input — that
+            # creates an infinite loop (process_command → queue → process_loop
+            # → _looks_like_slash_command → process_command → queue → …).
+            # Instead, pass the payload directly to chat() like normal input,
+            # with the /start prefix already in place.
             parts = cmd_original.split(None, 1)
             payload = parts[1].strip() if len(parts) > 1 else ""
             if not payload:
                 _cprint("  Usage: /start <task> — launch full orchestrated mode with orchestrator")
                 _cprint("  Tip:   Just type your message. If start_mode is 'auto', /start is applied automatically.")
             else:
-                self._pending_input.put("/start " + payload)
-                _cprint(f"  ⊙ Queued /start: {payload[:80]}{'...' if len(payload) > 80 else ''}")
+                _cprint(f"  ⚙️  /start {payload[:80]}{'...' if len(payload) > 80 else ''}")
+                # Run directly — avoids the infinite re-queue loop.
+                self._agent_running = True
+                self._invalidate()
+                try:
+                    self.chat("/start " + payload)
+                finally:
+                    self._agent_running = False
+                    self._spinner_text = ""
+                    self._tool_start_time = 0.0
+                    self._pending_tool_info.clear()
+                    self._last_scrollback_tool = ""
+                    self._invalidate()
         elif canonical == "help":
             self.show_help()
         elif canonical == "profile":
