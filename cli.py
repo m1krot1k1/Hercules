@@ -5291,7 +5291,12 @@ class HermesCLI:
 
         from agent.subagent_tree_panel import SubagentTreePanel, TREE_STYLES
         self._tree_mode = True
-        self._tree_panel = SubagentTreePanel()
+        # IMPORTANT: reuse the existing panel created during layout building.
+        # Creating a new instance here breaks the FormattedTextControl binding
+        # in build_tree_split_layout — the widget keeps rendering the old
+        # (empty) instance while the refresh thread updates the new one.
+        if not hasattr(self, '_tree_panel') or self._tree_panel is None:
+            self._tree_panel = SubagentTreePanel()
         self._tree_panel.refresh()
 
         # Start background refresh thread
@@ -5333,7 +5338,9 @@ class HermesCLI:
         self._tree_mode = not self._tree_mode
         if self._tree_mode:
             from agent.subagent_tree_panel import SubagentTreePanel, TREE_STYLES
-            self._tree_panel = SubagentTreePanel()
+            # Reuse existing panel from layout, same reason as _auto_enable_tree
+            if not hasattr(self, '_tree_panel') or self._tree_panel is None:
+                self._tree_panel = SubagentTreePanel()
             self._tree_panel.refresh()
             _cprint("  ⚕ Tree view ON — arrows navigate, Right/Enter select, Left/Esc back, /tree to exit")
 

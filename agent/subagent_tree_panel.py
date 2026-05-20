@@ -46,7 +46,7 @@ from agent.subagent_tree import (
 
 _MAX_TREE_WIDTH = 36
 _MAX_GOAL_CHARS = 24
-_VISIBLE_AFTER_COMPLETION = 60.0
+_VISIBLE_AFTER_COMPLETION = 86400.0  # 24h — match subagent_tree.py and delegate_tool GC
 
 _RUNNING_ICONS = ["🗘", "🌀", "⚡"]
 
