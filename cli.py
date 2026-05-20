@@ -2924,6 +2924,12 @@ class HermesCLI:
         # turn (which would make Ctrl+C feel like it did nothing).
         self._last_turn_interrupted = False
         self._should_exit = False
+
+        # /tree mode: split-pane subagent tree view
+        self._tree_mode = False
+        self._tree_panel = None  # SubagentTreePanel instance (created in run())
+        self._tree_refresh_thread = None
+        self._tree_refresh_stop = threading.Event()
         # /exit --delete: when True, the current session's SQLite history and
         # on-disk transcripts are deleted during shutdown. Set by
         # process_command() when the user runs /exit --delete or /quit --delete.
@@ -5273,6 +5279,55 @@ class HermesCLI:
         # ── Agent status ────────────────────────────────────────────────
         agent_running = getattr(self, "_agent_running", False)
         _cprint(f"\n  Agent: {'running' if agent_running else 'idle'}")
+
+    def _handle_tree_command(self):
+        """Handle /tree — toggle split-pane subagent tree view.
+
+        When activated, displays a left panel with the subagent tree
+        and a right panel with the selected subagent's reasoning output.
+        Navigate with arrow keys. Press Right/Enter to select or expand,
+        Left/Esc to collapse or exit. Tab toggles focus between panels.
+        """
+        self._tree_mode = not self._tree_mode
+        if self._tree_mode:
+            from agent.subagent_tree_panel import SubagentTreePanel, TREE_STYLES
+            self._tree_panel = SubagentTreePanel()
+            self._tree_panel.refresh()
+            _cprint("  ⚕ Tree view ON — arrows navigate, Right/Enter select, Left/Esc back, /tree to exit")
+
+            # Start background refresh thread
+            self._tree_refresh_stop.clear()
+
+            def _refresh_tree():
+                while not self._tree_refresh_stop.is_set():
+                    try:
+                        if self._tree_panel:
+                            self._tree_panel.refresh()
+                            if self._app:
+                                self._app.invalidate()
+                    except Exception:
+                        pass
+                    self._tree_refresh_stop.wait(1.0)
+
+            self._tree_refresh_thread = threading.Thread(target=_refresh_tree, daemon=True)
+            self._tree_refresh_thread.start()
+
+            # Inject tree styles into the app
+            if self._app:
+                try:
+                    current_style = self._app.style
+                    if current_style:
+                        style_dict = dict(current_style.style_rules) if hasattr(current_style, 'style_rules') else {}
+                        style_dict.update(TREE_STYLES)
+                    self._app.invalidate()
+                except Exception:
+                    pass
+        else:
+            _cprint("  ⚕ Tree view OFF")
+            self._tree_refresh_stop.set()
+            self._tree_panel = None
+            if self._app:
+                self._app.invalidate()
 
     def _handle_paste_command(self):
         """Handle /paste — explicitly check clipboard for an image.
@@ -8151,6 +8206,8 @@ class HermesCLI:
             self._handle_stop_command()
         elif canonical == "agents":
             self._handle_agents_command()
+        elif canonical == "tree":
+            self._handle_tree_command()
         elif canonical == "background":
             self._handle_background_command(cmd_original)
         elif canonical == "queue":
@@ -11791,6 +11848,10 @@ class HermesCLI:
                 style_dict = {k: _remap_value(v or "") for k, v in style_dict.items()}
         except Exception:
             pass
+        # Inject tree panel styles when /tree mode is active
+        if getattr(self, "_tree_mode", False):
+            from agent.subagent_tree_panel import TREE_STYLES
+            style_dict.update(TREE_STYLES)
         return style_dict
 
     def _apply_tui_skin_style(self) -> bool:
@@ -11837,6 +11898,7 @@ class HermesCLI:
         clarify_widget,
         model_picker_widget=None,
         spinner_widget=None,
+        tree_conditional=None,
         spacer,
         status_bar,
         input_rule_top,
@@ -11862,6 +11924,7 @@ class HermesCLI:
                 clarify_widget,
                 model_picker_widget,
                 spinner_widget,
+                tree_conditional,
                 spacer,
                 *self._get_extra_tui_widgets(),
                 status_bar,
@@ -13191,6 +13254,29 @@ class HermesCLI:
             wrap_lines=True,
         )
 
+        # ── Tree panel: ConditionalContainer that shows/hides with /tree ──
+        # The panel is always in the layout; Condition controls visibility.
+        from agent.subagent_tree_panel import (
+            SubagentTreePanel, build_tree_split_layout, TREE_STYLES,
+        )
+
+        # Create the tree panel instance (stored on self for refresh thread)
+        if not hasattr(cli_ref, '_tree_panel') or cli_ref._tree_panel is None:
+            cli_ref._tree_panel = SubagentTreePanel()
+        _tree_panel_instance = cli_ref._tree_panel
+
+        # Build the split-pane layout (left: tree, right: reasoning)
+        _tree_split_widget = build_tree_split_layout(_tree_panel_instance)
+
+        # Condition: visible only when /tree mode is on
+        def _is_tree_mode():
+            return getattr(cli_ref, '_tree_mode', False)
+
+        tree_conditional = ConditionalContainer(
+            content=_tree_split_widget,
+            filter=Condition(_is_tree_mode),
+        )
+
         spacer = Window(
             content=FormattedTextControl(get_hint_text),
             height=get_hint_height,
@@ -13622,6 +13708,34 @@ class HermesCLI:
         # Allow wrapper CLIs to register extra keybindings.
         self._register_extra_tui_keybindings(kb, input_area=input_area)
 
+        # ── Tree panel keybindings (active when /tree mode is on) ────
+        @kb.add('up', filter=Condition(lambda: getattr(self, '_tree_mode', False)))
+        def _tree_up(event):
+            if self._tree_panel:
+                self._tree_panel.move_up()
+                event.app.invalidate()
+
+        @kb.add('down', filter=Condition(lambda: getattr(self, '_tree_mode', False)))
+        def _tree_down(event):
+            if self._tree_panel:
+                self._tree_panel.move_down()
+                event.app.invalidate()
+
+        @kb.add('right', filter=Condition(lambda: getattr(self, '_tree_mode', False)))
+        def _tree_right(event):
+            if self._tree_panel:
+                self._tree_panel.move_right()
+                event.app.invalidate()
+
+        @kb.add('left', filter=Condition(lambda: getattr(self, '_tree_mode', False)))
+        def _tree_left(event):
+            if self._tree_panel:
+                should_exit = self._tree_panel.move_left()
+                if should_exit:
+                    # If nothing to collapse, don't exit — just deselect
+                    pass
+                event.app.invalidate()
+
         # Layout: interactive prompt widgets + ruled input at bottom.
         # The sudo, approval, and clarify widgets appear above the input when
         # the corresponding interactive prompt is active.
@@ -13637,6 +13751,7 @@ class HermesCLI:
                     clarify_widget=clarify_widget,
                     model_picker_widget=model_picker_widget,
                     spinner_widget=spinner_widget,
+                    tree_conditional=tree_conditional,
                     spacer=spacer,
                     status_bar=status_bar,
                     input_rule_top=input_rule_top,
@@ -13704,6 +13819,16 @@ class HermesCLI:
             'voice-processing': '#FFA500 italic',
             'voice-status': 'bg:#1a1a2e #87CEEB',
             'voice-status-recording': 'bg:#1a1a2e #FF4444 bold',
+            # Tree panel styles (subagent split-pane view)
+            'tree.header': 'bold #FFD700',
+            'tree.empty': '#666666',
+            'tree.running': '#00ff00',
+            'tree.completed': '#888888',
+            'tree.failed': '#ff4444',
+            'tree.idle': '#aaaaaa',
+            'tree.selected': 'bg:#0044aa #ffffff bold',
+            'tree.reasoning': '#FFF8DC',
+            'tree.border': '#FFFF00',
         }
         style = PTStyle.from_dict(self._build_tui_style_dict())
         
