@@ -1743,7 +1743,7 @@ DEFAULT_CONFIG = {
     },
 
     # Config schema version - bump this when adding new required fields
-    "_config_version": 23,
+    "_config_version": 24,
 }
 
 # =============================================================================
@@ -3923,6 +3923,23 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
                         "  ✓ Seeded auxiliary.curator defaults in config.yaml: "
                         f"{', '.join(added_aux)}"
                     )
+
+    # ── Version 23 → 24: migrate start_mode auto → manual ───────────
+    # In v24 the default start_mode changed from "auto" to "manual" so
+    # ordinary messages are no longer silently auto-prefixed as /start.
+    # Existing users who never touched start_mode still have "auto" in
+    # their config.yaml and need an explicit migration (a missing-key
+    # check won't catch this — the key already exists).
+    if current_ver < 24:
+        config = read_raw_config()
+        agent_cfg = config.get("agent", {})
+        if isinstance(agent_cfg, dict) and agent_cfg.get("start_mode") == "auto":
+            agent_cfg["start_mode"] = "manual"
+            config["agent"] = agent_cfg
+            save_config(config)
+            results["config_added"].append("agent.start_mode=manual (migrated from auto)")
+            if not quiet:
+                print("  ✓ Migrated agent.start_mode: auto → manual (no more auto-/start prefix)")
 
     if current_ver < latest_ver and not quiet:
         print(f"Config version: {current_ver} → {latest_ver}")
