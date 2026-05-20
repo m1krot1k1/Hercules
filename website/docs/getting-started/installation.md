@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: "Installation"
-description: "Install Hermes Agent on Linux, macOS, WSL2, native Windows (early beta), or Android via Termux"
+description: "Install Hercules Agent on Linux, macOS, WSL2, native Windows (early beta), or Android via Termux"
 ---
 
 # Installation
 
-Get Hermes Agent up and running in under two minutes with the one-line installer.
+Get Hercules Agent up and running in under two minutes with the one-line installer.
 
 ## Quick Install
 
