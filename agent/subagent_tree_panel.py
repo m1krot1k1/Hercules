@@ -168,6 +168,11 @@ class SubagentTreePanel:
                     if n.subagent_id == old_selected:
                         self.selected_index = i
                         break
+            # Fallback: always sync _selected_id to current selected_index,
+            # so move_up/move_down (which now set _selected_id) can't be
+            # silently overridden by a stale restore.
+            if self.flat_nodes and 0 <= self.selected_index < len(self.flat_nodes):
+                self._selected_id = self.flat_nodes[self.selected_index].subagent_id
 
             return True
 
@@ -177,8 +182,13 @@ class SubagentTreePanel:
         self._flatten(self.nodes)
         if self.flat_nodes:
             self.selected_index = min(self.selected_index, len(self.flat_nodes) - 1)
+            # Keep _selected_id in sync — without this, refresh() may restore
+            # a stale _selected_id and snap selection to the wrong agent.
+            node = self.flat_nodes[self.selected_index]
+            self._selected_id = node.subagent_id
         else:
             self.selected_index = 0
+            self._selected_id = None
 
     def _flatten(self, nodes: List[TreeNode]):
         for node in nodes:
@@ -190,11 +200,15 @@ class SubagentTreePanel:
         with self._lock:
             if self.flat_nodes and self.selected_index > 0:
                 self.selected_index -= 1
+                node = self.flat_nodes[self.selected_index]
+                self._selected_id = node.subagent_id
 
     def move_down(self):
         with self._lock:
             if self.flat_nodes and self.selected_index < len(self.flat_nodes) - 1:
                 self.selected_index += 1
+                node = self.flat_nodes[self.selected_index]
+                self._selected_id = node.subagent_id
 
     def move_right(self) -> Optional[str]:
         """Expand node or select subagent. Returns subagent_id if selected."""
@@ -291,46 +305,74 @@ class SubagentTreePanel:
         """Render the reasoning panel for the selected subagent."""
         with self._lock:
             if not self.flat_nodes or self.selected_index >= len(self.flat_nodes):
-                return FormattedText([("", "  Select a subagent to view output")])
+                return FormattedText([("class:tree.idle", "  ↑ Use arrows to select an agent")])
 
             node = self.flat_nodes[self.selected_index]
 
-            # Try to get live reasoning from delegate_tool
+            # Try to get live detail from delegate_tool
             detail = get_subagent_detail(node.subagent_id)
             reasoning = ""
+            summary_text = ""
             if detail:
-                reasoning = detail.get("reasoning", "") or detail.get("goal", "")
-            
+                reasoning = detail.get("reasoning", "")
+                summary_text = detail.get("summary", "") or ""
+
             parts: List[Tuple[str, str]] = []
-            # Header with subagent name
+            # Header with subagent icon + goal
             status_icon = node.icon
             parts.append(("class:tree.header", f" {status_icon} {node.goal}\n"))
 
-            # Status line
+            # Status line: status, model, elapsed, tools
             model_str = f" [{node.model}]" if node.model else ""
-            parts.append(("class:tree.idle", f"   Status: {node.status}{model_str}\n"))
-            parts.append(("class:tree.idle", f"   Elapsed: {node.elapsed}"))
+            status_style = "class:tree.running" if node.status == "running" else "class:tree.idle"
+            parts.append((status_style, f"   Status: {node.status}{model_str}\n"))
+            elapsed_line = f"   Elapsed: {node.elapsed}"
             if node.tool_count:
-                parts.append(("class:tree.idle", f"  Tools: {node.tool_count}"))
-            parts.append(("", "\n\n"))
+                elapsed_line += f"  Tools: {node.tool_count}"
+            if node.last_tool:
+                # Truncate long tool names
+                tool_short = node.last_tool[:40] + ("..." if len(node.last_tool) > 40 else "")
+                elapsed_line += f"  Last: {tool_short}"
+            parts.append(("class:tree.idle", elapsed_line + "\n\n"))
 
-            # Reasoning content
-            if reasoning:
-                parts.append(("class:tree.reasoning", f"  {reasoning}"))
-            elif node.status == "running":
-                parts.append(("class:tree.running", "  Working...\n"))
-                # Show last tool if available
-                if node.last_tool:
-                    parts.append(("class:tree.idle", f"  Last tool: {node.last_tool}"))
-            elif node.status == "completed":
-                # Try to show actual summary from the registry
-                if detail and detail.get("summary"):
-                    summary_text = detail["summary"][:500]
-                    parts.append(("class:tree.reasoning", f"  {summary_text}"))
+            # ── Running agent: show reasoning / thinking ──
+            if node.status == "running":
+                if reasoning:
+                    # Show the live reasoning/thinking text
+                    parts.append(("class:tree.running", "  💭 Thinking:\n"))
+                    parts.append(("class:tree.reasoning", f"  {reasoning}\n"))
                 else:
-                    parts.append(("class:tree.completed", "  Completed."))
+                    parts.append(("class:tree.running", "  ⚡ Running — waiting for first action...\n"))
+                # Show tool history hint
+                if node.tool_count and node.last_tool:
+                    parts.append(("class:tree.idle",
+                        f"\n  Recent: {node.last_tool[:50]}"
+                        f"{'...' if len(node.last_tool) > 50 else ''}"
+                        f" (+{node.tool_count - 1} more)\n"))
+
+            # ── Completed agent: show summary ──
+            elif node.status == "completed":
+                if summary_text:
+                    summary_short = summary_text[:500]
+                    parts.append(("class:tree.completed", f"  ✓ {summary_short}\n"))
+                elif reasoning:
+                    parts.append(("class:tree.reasoning", f"  {reasoning}\n"))
+                else:
+                    parts.append(("class:tree.completed", "  ✓ Completed successfully.\n"))
+
+            # ── Failed / error ──
             elif node.status in ("failed", "error", "timeout"):
-                parts.append(("class:tree.failed", f"  {node.status.upper()}"))
+                error_text = summary_text or detail.get("error", "") if detail else ""
+                parts.append(("class:tree.failed", f"  ✗ {node.status.upper()}"))
+                if error_text:
+                    parts.append(("class:tree.failed", f": {error_text[:200]}"))
+                parts.append(("", "\n"))
+
+            # ── Interrupted ──
+            elif node.status == "interrupted":
+                parts.append(("class:tree.idle", "  ⏸ Interrupted\n"))
+                if summary_text:
+                    parts.append(("class:tree.idle", f"  {summary_text[:300]}\n"))
 
             return FormattedText(parts)
 
