@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://hermes-agent.nousresearch.com/docs/"><img src="https://img.shields.io/badge/Docs-hermes--agent.nousresearch.com-FFD700?style=for-the-badge" alt="Документация"></a>
   <a href="https://discord.gg/NousResearch"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://github.com/NousResearch/hermes-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
+  <a href="https://github.com/m1krot1k1/Hercules/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://nousresearch.com"><img src="https://img.shields.io/badge/Built%20by-Nous%20Research-blueviolet?style=for-the-badge" alt="Built by Nous Research"></a>
   <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=for-the-badge" alt="中文"></a>
 </p>
@@ -72,17 +72,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -198,7 +198,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -220,7 +220,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -278,17 +278,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -404,7 +404,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -426,7 +426,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -484,17 +484,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -610,7 +610,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -632,7 +632,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -690,17 +690,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -816,7 +816,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -838,7 +838,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -896,17 +896,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -1022,7 +1022,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -1044,7 +1044,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -1102,17 +1102,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -1228,7 +1228,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -1250,7 +1250,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -1308,17 +1308,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -1434,7 +1434,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -1456,7 +1456,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -1514,17 +1514,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -1640,7 +1640,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -1662,7 +1662,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -1720,17 +1720,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -1846,7 +1846,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -1868,7 +1868,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -1926,17 +1926,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -2052,7 +2052,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -2074,7 +2074,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -2132,17 +2132,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -2258,7 +2258,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -2280,7 +2280,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -2338,17 +2338,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -2464,7 +2464,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -2486,7 +2486,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -2544,17 +2544,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -2670,7 +2670,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -2692,7 +2692,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -2750,17 +2750,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -2876,7 +2876,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -2898,7 +2898,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -2956,17 +2956,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -3082,7 +3082,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -3104,7 +3104,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -3162,17 +3162,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -3288,7 +3288,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -3310,7 +3310,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -3368,17 +3368,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -3494,7 +3494,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -3516,7 +3516,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
@@ -3574,17 +3574,17 @@ Orchestrator
 ### Linux, macOS, WSL2, Termux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.sh | bash
 ```
 
 ### Windows (нативная, PowerShell) — Ранняя бета
 
-> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/NousResearch/hermes-agent/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
+> **Внимание:** Нативная поддержка Windows находится в **ранней бета-версии**. Она устанавливается и работает, но не была так широко протестирована, как наши пути для Linux/macOS/WSL2. Пожалуйста, [сообщайте об ошибках](https://github.com/m1krot1k1/Hercules/issues), когда столкнетесь с проблемами. Для наиболее проверенной настройки Windows сегодня запустите однострочник для Linux выше внутри **WSL2**.
 
 Выполните это в PowerShell:
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.ps1)
+iex (irm https://raw.githubusercontent.com/m1krot1k1/Hercules/main/scripts/install.ps1)
 ```
 
 Установщик обрабатывает все: uv, Python 3.11, Node.js, ripgrep, ffmpeg, **и портативный Git Bash** (MinGit, распакованный в `%LOCALAPPDATA%\hermes\git` — не требует прав администратора, полностью изолирован от любой системной установки Git). Hermes использует этот встроенный Git Bash для выполнения команд оболочки.
@@ -3700,7 +3700,7 @@ hermes claw migrate --overwrite  # Перезапись существующих
 Краткое руководство для участников — клонируйте и запускайте с помощью `setup-hermes.sh`:
 
 ```bash
-git clone https://github.com/NousResearch/hermes-agent.git
+git clone https://github.com/m1krot1k1/Hercules.git
 cd hermes-agent
 ./setup-hermes.sh     # устанавливает uv, создает venv, устанавливает .[all], создает символическую ссылку ~/.local/bin/hermes
 ./hermes              # автоматически определяет venv, не нужно `source` заранее
@@ -3722,7 +3722,7 @@ scripts/run_tests.sh
 
 - 💬 [Discord](https://discord.gg/NousResearch)
 - 📚 [Skills Hub](https://agentskills.io)
-- 🐛 [Issues](https://github.com/NousResearch/hermes-agent/issues)
+- 🐛 [Issues](https://github.com/m1krot1k1/Hercules/issues)
 - 🔌 [computer-use-linux](https://github.com/avifenesh/computer-use-linux) — MCP сервер управления рабочим столом Linux для Hermes и других хостов MCP, с деревьями доступности AT-SPI, вводом Wayland/X11, скриншотами и таргетингом окон композитора.
 - 🔌 [HermesClaw](https://github.com/AaronWong1999/hermesclaw) — Мост WeChat от сообщества: Запустите Hermes Agent и OpenClaw на одном аккаунте WeChat.
 
