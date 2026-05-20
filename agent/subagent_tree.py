@@ -19,6 +19,8 @@ from typing import Any, Dict, List, Optional
 from tools.delegate_tool import (
     _gc_completed_subagents,
     list_active_subagents as _list_active_subagents,
+    get_telemetry_tree,
+    format_total_metrics,
 )
 
 # ---------------------------------------------------------------------------
@@ -128,7 +130,23 @@ def render_subagent_tree(
             key=lambda r: (r.get("depth", 0), r.get("started_at", 0))
         )
 
-    # ── Count statistics ────────────────────────────────────────────
+    # ── Get telemetry tree for rollup metrics ──────────────────
+    telemetry_tree = get_telemetry_tree()
+
+    # Build a lookup from subagent_id to telemetry for quick access
+    telemetry_by_id: Dict[str, Any] = {}
+
+    def _build_telemetry_lookup(node: Dict[str, Any]):
+        agent = node.get("agent")
+        if agent:
+            telemetry_by_id[agent.agent_id] = agent
+        for child in node.get("children", []):
+            _build_telemetry_lookup(child)
+
+    if telemetry_tree:
+        _build_telemetry_lookup(telemetry_tree)
+
+    # ── Count statistics ────────────────────────────────────
     running = sum(1 for r in visible if r.get("status") == "running")
     completed = sum(1 for r in visible if r.get("status") == "completed")
     failed = sum(
@@ -136,19 +154,33 @@ def render_subagent_tree(
     )
     interrupted = sum(1 for r in visible if r.get("status") == "interrupted")
 
+    # Calculate total rollup metrics for the header
+    total_tools = 0
+    total_tokens = 0
+    total_cost = 0.0
+    for tid, tel in telemetry_by_id.items():
+        if tel.parent_id is None:  # Only count root agents for total
+            total_tools += tel.total_tools
+            total_tokens += tel.total_tokens
+            total_cost += tel.total_cost
+
     parts: List[str] = []
     status_parts: List[str] = []
     if running:
-        status_parts.append(f"{running} running")
+        status_parts.append(f"{running}⚡")
     if completed:
-        status_parts.append(f"{completed} done")
+        status_parts.append(f"{completed}✓")
     if failed:
-        status_parts.append(f"{failed} failed")
+        status_parts.append(f"{failed}✗")
     if interrupted:
-        status_parts.append(f"{interrupted} interrupted")
-    status_str = ", ".join(status_parts) if status_parts else "idle"
+        status_parts.append(f"{interrupted}⏸")
+    status_str = " ".join(status_parts) if status_parts else "idle"
 
-    parts.append(f" {_running_icon()} Delegation ({status_str})")
+    # Format header with totals
+    tokens_str = f"{total_tokens:,}" if total_tokens >= 1000 else str(total_tokens)
+    cost_str = f" ${total_cost:.2f}" if total_cost > 0 else ""
+    header = f" ⚕ Agents ({status_str}) Σ{tokens_str}t{cost_str}"
+    parts.append(header)
 
     # ── Recursive tree builder ──────────────────────────────────────
     def _render_node(
@@ -166,26 +198,56 @@ def render_subagent_tree(
         last_tool = node.get("last_tool", "")
         model = node.get("model", "") or ""
 
+        # Get telemetry for this node
+        sid = node.get("subagent_id")
+        tel = telemetry_by_id.get(sid) if sid else None
+
         # Compact: depth indentation + icon + goal + elapsed
         branch = "└── " if is_last else "├── "
         indent = prefix + branch
 
-        # Node line:  ⚡ code-reviewer (3s, 12t, file_read)
-        # Show reasoning if available for running agents
-        reasoning = node.get("reasoning", "") or ""
-        tool_part = f", {tool_count}t" if tool_count else ""
+        # Node line with rollup metrics
+        # Format: ✓ code (50t in, 30t out, $0.05 total: 80t, $0.10)
+        tokens_in = node.get("tokens_in", 0) or 0
+        tokens_out = node.get("tokens_out", 0) or 0
+        cost = node.get("cost_usd", 0) or 0
+
+        # Build metrics part
+        metrics_parts = []
+        if tokens_in or tokens_out:
+            metrics_parts.append(f"{tokens_in}t in")
+            metrics_parts.append(f"{tokens_out}t out")
+        if cost > 0:
+            metrics_parts.append(f"${cost:.2f}")
+
+        # Add rollup totals if available
+        if tel and (tel.total_tokens > (tokens_in + tokens_out) or tel.total_cost > cost):
+            metrics_parts.append(f"total: {tel.total_tokens}t")
+            if tel.total_cost > 0:
+                metrics_parts.append(f"${tel.total_cost:.2f}")
+
+        metrics_str = ", ".join(metrics_parts) if metrics_parts else ""
         model_part = f" [{model}]" if model else ""
 
-        if status == "running" and reasoning:
-            # Show what the agent is currently thinking/doing
+        if status == "running" and node.get("reasoning", ""):
+            reasoning = node.get("reasoning", "") or ""
             short_reason = reasoning[:40] + ("..." if len(reasoning) > 40 else "")
-            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part})"
+            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            if metrics_str:
+                node_line += f", {metrics_str}"
+            node_line += ")"
             reason_line = f"{indent}   ┈ {short_reason}"
         elif last_tool and status == "running":
-            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part}, {last_tool})"
+            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            if metrics_str:
+                node_line += f", {metrics_str}"
+            node_line += f", {last_tool})"
             reason_line = None
         else:
-            node_line = f"{icon} {goal}{model_part} ({elapsed}{tool_part})"
+            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            if metrics_str:
+                node_line += f", {metrics_str}"
+            node_line += ")"
             reason_line = None
 
         line = f"{indent}{node_line}"
@@ -207,18 +269,17 @@ def render_subagent_tree(
                 child_is_last = i == len(children) - 1
                 _render_node(child, prefix=child_prefix, is_last=child_is_last)
 
-    # ── Root nodes (parent_id is None) ──────────────────────────────
-    root_nodes = children_by_parent.get(None, [])
-    for i, root in enumerate(root_nodes):
-        root_is_last = i == len(root_nodes) - 1
-        _render_node(root, prefix=" ", is_last=root_is_last)
-
+    # Render root nodes (those with parent_id is None)
+    root_ids = [rid for rid in by_id if by_id[rid].get("parent_id") is None]
+    for root_id in root_ids:
+        _render_node(by_id[root_id], prefix="", is_last=True)
+    
+    # Add total summary line
+    if total_tools > 0 or total_tokens > 0:
+        summary = format_total_metrics(total_tools, total_tokens, total_cost)
+        parts.append(f"\n{summary}")
+    
     return "\n".join(parts)
-
-
-# ---------------------------------------------------------------------------
-# Structured tree snapshot for TUI panel
-# ---------------------------------------------------------------------------
 
 def get_subagent_tree_snapshot() -> List[Dict[str, Any]]:
     """Return a structured list of subagent records for the TUI panel.

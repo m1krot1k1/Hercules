@@ -626,7 +626,7 @@ def coerce_tool_args(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
     return args
 
 
-def _coerce_value(value: str, expected_type, schema: dict | None = None):
+def _coerce_value(value: str, expected_type, schema: Optional[dict] = None):
     """Attempt to coerce a string *value* to *expected_type*.
 
     Returns the original string when coercion is not applicable or fails.
@@ -655,7 +655,7 @@ def _coerce_value(value: str, expected_type, schema: dict | None = None):
     return value
 
 
-def _schema_allows_null(schema: dict | None) -> bool:
+def _schema_allows_null(schema: Optional[dict]) -> bool:
     """Return True when a JSON Schema fragment explicitly permits null."""
     if not isinstance(schema, dict):
         return False

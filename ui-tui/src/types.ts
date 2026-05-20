@@ -72,6 +72,22 @@ export interface SubagentAggregate {
   totalTools: number
 }
 
+export interface TelemetryData {
+  agentId: string
+  inputTokens: number
+  outputTokens: number
+  reasoningTokens: number
+  costUsd: number
+  durationSeconds: number
+  toolCount: number
+  status: string
+  model: string
+  descendantTokens: number
+  descendantCost: number
+  totalTokens: number
+  totalCost: number
+}
+
 export interface DelegationStatus {
   active: {
     depth?: number

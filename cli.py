@@ -13801,6 +13801,12 @@ class HermesCLI:
                     pass
                 event.app.invalidate()
 
+        @kb.add('tab', filter=Condition(lambda: getattr(self, '_tree_mode', False)))
+        def _tree_toggle_output(event):
+            if self._tree_panel:
+                self._tree_panel.toggle_output()
+                event.app.invalidate()
+
         # Layout: interactive prompt widgets + ruled input at bottom.
         # The sudo, approval, and clarify widgets appear above the input when
         # the corresponding interactive prompt is active.

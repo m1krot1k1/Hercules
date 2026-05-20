@@ -2800,6 +2800,43 @@ def _(rid, params: dict) -> dict:
     return _ok(rid, {"found": ok, "subagent_id": subagent_id})
 
 
+@method("subagent.toggle_output")
+def _(rid, params: dict) -> dict:
+    """Toggle output visibility for a subagent in the TUI overlay."""
+    subagent_id = str(params.get("subagent_id") or "").strip()
+    if not subagent_id:
+        return _err(rid, 4000, "subagent_id required")
+    
+    # Emit event for TUI to handle
+    session_id = str(params.get("session_id") or "")
+    _emit("subagent.tree_updated", session_id, {
+        "type": "toggle_output",
+        "subagent_id": subagent_id,
+    })
+    return _ok(rid, {"success": True, "subagent_id": subagent_id})
+
+
+@method("subagent_tree.subscribe")
+def _(rid, params: dict) -> dict:
+    """Subscribe to subagent tree updates.
+    
+    The TUI can call this to start receiving subagent.tree_updated events.
+    """
+    session_id = str(params.get("session_id") or "").strip()
+    
+    # Send initial tree state
+    try:
+        from tools.delegate_tool import list_active_subagents
+        agents = list_active_subagents()
+        _emit("subagent.tree_updated", session_id, {
+            "type": "initial",
+            "agents": agents,
+        })
+        return _ok(rid, {"subscribed": True, "session_id": session_id})
+    except Exception as e:
+        return _err(rid, 5000, f"Failed to subscribe: {e}")
+
+
 # ── Spawn-tree snapshots: TUI-written, disk-persisted ────────────────
 # The TUI is the source of truth for subagent state (it assembles payloads
 # from the event stream).  On turn-complete it posts the final tree here;

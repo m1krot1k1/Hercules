@@ -31,9 +31,10 @@ import {
 } from '../lib/subagentTree.js'
 import { compactPreview } from '../lib/text.js'
 import type { Theme } from '../theme.js'
-import type { SubagentNode, SubagentProgress } from '../types.js'
+import type { SubagentNode, SubagentProgress, TelemetryData } from '../types.js'
+import { useTelemetry, useSubagentTree } from '../hooks/useTelemetry.js'
 
-// ── Types + lookup tables ────────────────────────────────────────────
+// ── Types + lookup tables ────────────────────────────────────
 
 type SortMode = 'depth-first' | 'duration-desc' | 'status' | 'tools-desc'
 type FilterMode = 'all' | 'failed' | 'leaf' | 'running'
@@ -99,7 +100,7 @@ const STATUS_GLYPH: Record<Status, { color: (t: Theme) => string; glyph: string 
 // Heatmap palette — cold → hot, resolved against the active theme.
 const heatPalette = (t: Theme) => [t.color.border, t.color.accent, t.color.primary, t.color.warn, t.color.error]
 
-// ── Pure helpers ─────────────────────────────────────────────────────
+// ── Pure helpers ─────────────────────────────────────────────
 
 const fmtDur = (seconds?: number) => (seconds == null || seconds <= 0 ? '' : fmtDuration(seconds))
 const fmtElapsedLabel = (seconds: number) => (seconds < 0 ? '' : fmtDuration(seconds))
@@ -536,6 +537,302 @@ function Detail({ id, node, t }: { id?: string; node: SubagentNode; t: Theme }) 
   )
 }
 
+// ── StatusBar ───────────────────────────────────────────
+
+function StatusBar({
+  totalTools,
+  totalTokens,
+  totalCost,
+  t
+}: {
+  totalTools: number
+  totalTokens: number
+  totalCost: number
+  t: Theme
+}) {
+  const fmtTokensLocal = (n: number): string => {
+    if (n < 1000) return String(Math.round(n))
+    if (n < 10_000) return `${(n / 1000).toFixed(1)}k`
+    return `${Math.round(n / 1000)}k`
+  }
+
+  return (
+    <Box width="100%" borderTop borderStyle="single" paddingX={1}>
+      <Text color={t.color.statusFg}>
+        Общее: {totalTools} tools called · {fmtTokensLocal(totalTokens)} tokens · ${totalCost.toFixed(2)}
+      </Text>
+    </Box>
+  )
+}
+
+// ── TelemetryPanel ──────────────────────────────────────────
+
+function TelemetryPanel({
+  telemetry,
+  t
+}: {
+  telemetry: TelemetryData | null
+  t: Theme
+}) {
+  if (!telemetry) {
+    return (
+      <Box flexDirection="column" padding={1}>
+        <Text color={t.color.muted}>Select an agent to view telemetry</Text>
+      </Box>
+    )
+  }
+
+  const {
+    agentId,
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    costUsd,
+    durationSeconds,
+    toolCount,
+    status,
+    model,
+    totalTokens: totalTok,
+    totalCost: totalCst
+  } = telemetry
+
+  return (
+    <Box flexDirection="column" padding={1} height="100%">
+      <Text bold color={t.color.text}>
+        Agent: {agentId.slice(0, 8)}...
+      </Text>
+      
+      <Box marginTop={1} flexDirection="column">
+        <Text color={t.color.label}>Status: <Text color={t.color.text}>{status}</Text></Text>
+        {model ? <Text color={t.color.label}>Model: <Text color={t.color.text}>{model}</Text></Text> : null}
+      </Box>
+
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color={t.color.accent}>Direct:</Text>
+        <Text color={t.color.text}>
+          {fmtTokens(inputTokens)} in, {fmtTokens(outputTokens)} out
+          {reasoningTokens ? `, ${fmtTokens(reasoningTokens)} reasoning` : ''}
+        </Text>
+        {costUsd > 0 ? <Text color={t.color.text}>${fmtCost(costUsd)}</Text> : null}
+      </Box>
+
+      <Box marginTop={1} flexDirection="column">
+        <Text bold color={t.color.accent}>Total (with descendants):</Text>
+        <Text color={t.color.text}>
+          {fmtTokens(totalTok)} tokens
+        </Text>
+        {totalCst > 0 ? <Text color={t.color.text}>${fmtCost(totalCst)}</Text> : null}
+      </Box>
+
+      {durationSeconds > 0 ? (
+        <Box marginTop={1}>
+          <Text color={t.color.label}>Time: <Text color={t.color.text}>{fmtDuration(durationSeconds)}</Text></Text>
+        </Box>
+      ) : null}
+
+      <Box marginTop={1} flexDirection="column">
+        <Text color={t.color.label}>Tools: <Text color={t.color.text}>{toolCount}</Text></Text>
+      </Box>
+    </Box>
+  )
+}
+
+// ── AgentOutputPanel ──────────────────────────────────────────
+
+function AgentOutputPanel({
+  node,
+  t,
+  showThinking,
+  setShowThinking,
+  showToolCalls,
+  setShowToolCalls,
+  showIntermediate,
+  setShowIntermediate
+}: {
+  node: SubagentNode | null
+  t: Theme
+  showThinking: boolean
+  setShowThinking: (v: boolean) => void
+  showToolCalls: boolean
+  setShowToolCalls: (v: boolean) => void
+  showIntermediate: boolean
+  setShowIntermediate: (v: boolean) => void
+}) {
+  const scrollRef = useRef<null | ScrollBoxHandle>(null)
+
+  if (!node) {
+    return (
+      <Box flexDirection="column" padding={1}>
+        <Text color={t.color.muted}>Select an agent to view output</Text>
+      </Box>
+    )
+  }
+
+  const { item } = node
+  const outputTail = item.outputTail ?? []
+
+  return (
+    <Box flexDirection="column" height="100%">
+      {/* Toggles */}
+      <Box marginBottom={1}>
+        <Text color={t.color.muted}>
+          [<Text color={showThinking ? t.color.accent : t.color.muted}>{' '}☐{' '}</Text>
+          <Text color={showThinking ? t.color.accent : t.color.text}>Show Thinking</Text>
+          <Text color={t.color.muted}>{' '}] </Text>
+          
+          [<Text color={showToolCalls ? t.color.accent : t.color.muted}>{' '}☑{' '}</Text>
+          <Text color={showToolCalls ? t.color.accent : t.color.text}>Show Tool Calls</Text>
+          <Text color={t.color.muted}>{' '}] </Text>
+          
+          [<Text color={showIntermediate ? t.color.accent : t.color.muted}>{' '}☐{' '}</Text>
+          <Text color={showIntermediate ? t.color.accent : t.color.text}>Show Intermediate</Text>
+          <Text color={t.color.muted}>{' '}]</Text>
+        </Text>
+      </Box>
+
+      <Box borderTop borderStyle="single" marginBottom={1} />
+
+      {/* Output content */}
+      <ScrollBox flexDirection="column" flexGrow={1} ref={scrollRef}>
+        <Box flexDirection="column" paddingRight={1}>
+          {showThinking && item.thinking.length > 0 ? (
+            <Box flexDirection="column" marginBottom={1}>
+              <Text bold color={t.color.accent}>Thinking:</Text>
+              {item.thinking.map((tLine, i) => (
+                <Text key={i} color={t.color.text} wrap="wrap">
+                  {tLine}
+                </Text>
+              ))}
+            </Box>
+          ) : null}
+
+          {showToolCalls && outputTail.length > 0 ? (
+            <Box flexDirection="column" marginBottom={1}>
+              <Text bold color={t.color.accent}>Tool Calls:</Text>
+              {outputTail.map((entry, i) => (
+                <Text key={i} color={entry.isError ? t.color.error : t.color.text} wrap="wrap">
+                  <Text bold color={entry.isError ? t.color.error : t.color.accent}>
+                    {entry.tool}
+                  </Text>{' '}
+                  {entry.preview}
+                </Text>
+              ))}
+            </Box>
+          ) : null}
+
+          {!showThinking && !showToolCalls ? (
+            <Text color={t.color.muted}>
+              Click 'Show Output' to see details
+            </Text>
+          ) : null}
+        </Box>
+      </ScrollBox>
+    </Box>
+  )
+}
+
+// ── AgentTreePanel ──────────────────────────────────────────
+
+function AgentTreePanel({
+  tree,
+  selectedId,
+  onSelect,
+  onToggleOutput,
+  t,
+  cursor,
+  setCursor,
+  sort,
+  setSort,
+  filter,
+  setFilter
+}: {
+  tree: SubagentNode[]
+  selectedId: string | null
+  onSelect: (id: string) => void
+  onToggleOutput: (id: string) => void
+  t: Theme
+  cursor: number
+  setCursor: (c: number) => void
+  sort: SortMode
+  setSort: (s: SortMode) => void
+  filter: FilterMode
+  setFilter: (f: FilterMode) => void
+}) {
+  const rows = useMemo(() => prepareRows(tree, sort, filter), [tree, sort, filter])
+  const peak = useMemo(() => peakHotness(tree), [tree])
+  const { stdout } = useStdout()
+  const cols = stdout?.columns ?? 80
+  const rowsH = Math.max(8, (stdout?.rows ?? 24) - 20)
+  const listWindowStart = Math.max(0, cursor - Math.floor(rowsH / 2))
+
+  useInput((ch, key) => {
+    if (key.upArrow || ch === 'k') {
+      setCursor(c => Math.max(0, c - 1))
+    } else if (key.downArrow || ch === 'j') {
+      setCursor(c => Math.min(Math.max(0, rows.length - 1), c + 1))
+    } else if (ch === 's') {
+      setSort(s => cycle(SORT_ORDER, s))
+    } else if (ch === 'f') {
+      setFilter(f => cycle(FILTER_ORDER, f))
+    }
+  })
+
+  return (
+    <Box flexDirection="column" height="100%">
+      <Text bold color={t.color.primary}>
+        ⚕ Agents ({rows.length})
+      </Text>
+      
+      <Box marginTop={1} flexDirection="column" flexGrow={1} overflow="hidden">
+        {rows.length === 0 ? (
+          <Text color={t.color.muted}>No subagents this turn.</Text>
+        ) : (
+          rows.slice(listWindowStart, listWindowStart + rowsH).map((node, i) => {
+            const globalIdx = listWindowStart + i
+            const isSelected = globalIdx === cursor
+            const { color, glyph } = statusGlyph(node.item, t)
+            const fg = isSelected ? t.color.accent : t.color.text
+            
+            return (
+              <Box key={node.item.id} flexDirection="column">
+                <Text 
+                  bold={isSelected} 
+                  color={fg} 
+                  inverse={isSelected}
+                  wrap="truncate-end"
+                  onClick={() => {
+                    setCursor(globalIdx)
+                    onSelect(node.item.id)
+                  }}
+                >
+                  <Text color={isSelected ? fg : t.color.muted}>{formatRowId(globalIdx)} </Text>
+                  {indentFor(node.item.depth)}
+                  <Text color={isSelected ? fg : color}>{glyph}</Text> {' '}
+                  {compactPreview(node.item.goal || 'subagent', cols - 30)}
+                </Text>
+                {isSelected ? (
+                  <Text 
+                    color={t.color.accent}
+                    onClick={() => onToggleOutput(node.item.id)}
+                  >
+                    [{node.item.show_output ? 'Hide Output' : 'Show Output'}]
+                  </Text>
+                ) : null}
+              </Box>
+            )
+          })
+        )}
+      </Box>
+
+      <Box marginTop={1}>
+        <Text color={t.color.muted}>
+          s sort:{SORT_LABEL[sort]} · f filter:{FILTER_LABEL[filter]}
+        </Text>
+      </Box>
+    </Box>
+  )
+}
+
 function ListRow({
   active,
   index,
@@ -709,15 +1006,17 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
   const [cursor, setCursor] = useState(0)
   const [flash, setFlash] = useState<string>('')
   const [now, setNow] = useState(() => Date.now())
-  // cc-style view switching: list = full-width row picker, detail = full-width
-  // scrollable pane.  Two panes side-by-side in Ink fought Yoga flex.
-  const [mode, setMode] = useState<'detail' | 'list'>('list')
+  // Three-panel mode: all panels visible simultaneously
+  const [showThinking, setShowThinking] = useState(true)
+  const [showToolCalls, setShowToolCalls] = useState(true)
+  const [showIntermediate, setShowIntermediate] = useState(true)
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
 
   const detailScrollRef = useRef<null | ScrollBoxHandle>(null)
   const prevLiveCountRef = useRef(liveSubagents.length)
 
-  // ── Derived state ──────────────────────────────────────────────────
-
+  // ── Derived state ──────────────────────────────────────────
+  
   const activeSnapshot = historyIndex > 0 ? history[historyIndex - 1] : null
   // Instant fallback to history[0] the moment the live list clears — avoids
   // a one-frame "no subagents" flash while the auto-follow effect fires.
@@ -739,8 +1038,8 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
   const rowsH = Math.max(8, (stdout?.rows ?? 24) - 10)
   const listWindowStart = Math.max(0, cursor - Math.floor(rowsH / 2))
 
-  // ── Effects ────────────────────────────────────────────────────────
-
+  // ── Effects ────────────────────────────────────────────────
+  
   useEffect(() => {
     // Ticker drives both the live gantt and OverlayScrollbar content-reflow
     // detection.  Slower in replay (nothing's growing) but not stopped
@@ -774,7 +1073,7 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
   useEffect(() => {
     // Reset detail scroll on navigation so the top of the new node shows.
     detailScrollRef.current?.scrollTo(0)
-  }, [cursor, historyIndex, mode])
+  }, [cursor, historyIndex])
 
   useEffect(() => {
     // Warm caps + paused flag on open.
@@ -789,8 +1088,15 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
     }
   }, [cursor, rows.length])
 
-  // ── Actions ────────────────────────────────────────────────────────
+  // Update selectedAgentId when cursor changes
+  useEffect(() => {
+    if (rows.length > 0 && cursor >= 0 && cursor < rows.length) {
+      setSelectedAgentId(rows[cursor].item.id)
+    }
+  }, [cursor, tree, sort, filter])
 
+  // ── Actions ────────────────────────────────────────────────
+  
   const guardLive = (action: () => void) => {
     if (replayMode) {
       setFlash('replay mode — controls disabled')
@@ -846,8 +1152,22 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
     onClose()
   }
 
-  // ── Input ──────────────────────────────────────────────────────────
+  const handleSelectAgent = (id: string) => {
+    setSelectedAgentId(id)
+    // Find cursor for this id
+    const rows = prepareRows(tree, sort, filter)
+    const idx = rows.findIndex(n => n.item.id === id)
+    if (idx >= 0) setCursor(idx)
+  }
 
+  const handleToggleOutput = (id: string) => {
+    // Toggle output visibility - would need to call gateway method
+    gw.request('subagent.toggle_output', { subagent_id: id })
+      .catch(() => {})
+  }
+
+  // ── Input ──────────────────────────────────────────────────
+  
   const detailPageSize = Math.max(4, rowsH - 2)
   const wheelDetailDy = 3
   const scrollDetail = (dy: number) => detailScrollRef.current?.scrollBy(dy)
@@ -858,7 +1178,7 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
     }
 
     if (key.escape) {
-      return mode === 'detail' ? setMode('list') : closeWithCleanup()
+      return closeWithCleanup()
     }
 
     // Shared actions (both modes).
@@ -882,51 +1202,7 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
       return killSubtree(selected)
     }
 
-    if (mode === 'detail') {
-      if (key.leftArrow || ch === 'h') {
-        return setMode('list')
-      }
-
-      if (key.pageUp || (key.ctrl && ch === 'u')) {
-        return scrollDetail(-detailPageSize)
-      }
-
-      if (key.pageDown || (key.ctrl && ch === 'd')) {
-        return scrollDetail(detailPageSize)
-      }
-
-      if (key.wheelUp) {
-        return scrollDetail(-wheelDetailDy)
-      }
-
-      if (key.wheelDown) {
-        return scrollDetail(wheelDetailDy)
-      }
-
-      if (key.upArrow || ch === 'k') {
-        return scrollDetail(-2)
-      }
-
-      if (key.downArrow || ch === 'j') {
-        return scrollDetail(2)
-      }
-
-      if (ch === 'g') {
-        return detailScrollRef.current?.scrollTo(0)
-      }
-
-      if (ch === 'G') {
-        return detailScrollRef.current?.scrollToBottom?.()
-      }
-
-      return
-    }
-
-    // List mode.
-    if ((key.return || key.rightArrow || ch === 'l') && selected) {
-      return setMode('detail')
-    }
-
+    // Tree panel navigation
     if (key.upArrow || ch === 'k' || key.wheelUp) {
       return setCursor(c => Math.max(0, c - 1))
     }
@@ -952,8 +1228,8 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
     }
   })
 
-  // ── Header assembly ────────────────────────────────────────────────
-
+  // ── Header assembly ──────────────────────────────────────────────
+  
   const mix = Object.entries(
     subagents.reduce<Record<string, number>>((acc, it) => {
       const key = it.model ? it.model.split('/').pop()! : 'inherit'
@@ -980,11 +1256,7 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
 
   const metaLine = [formatSummary(totals), spark, capsLabel, mix ? `· ${mix}` : ''].filter(Boolean).join('  ')
 
-  const controlsHint = replayMode
-    ? ' · controls locked'
-    : ` · x kill · X subtree · p ${delegation.paused ? 'resume' : 'pause'}`
-
-  // ── Rendering ──────────────────────────────────────────────────────
+  // ── Rendering (Three-panel layout) ────────────────────────────
 
   if (diffPair) {
     return <DiffView cols={cols} onClose={closeWithCleanup} pair={diffPair} t={t} />
@@ -992,6 +1264,7 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
 
   return (
     <Box alignItems="stretch" flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
+      {/* Header */}
       <Box flexDirection="column" marginBottom={1}>
         <Text wrap="truncate-end">
           <Text bold color={replayMode ? t.color.border : t.color.primary}>
@@ -1006,57 +1279,62 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
         </Text>
       </Box>
 
-      {rows.length === 0 ? (
-        <Box flexDirection="column" flexGrow={1}>
-          <Text color={t.color.muted}>No subagents this turn. Trigger delegate_task to populate the tree.</Text>
+      {/* Three-panel layout */}
+      <Box flexDirection="row" flexGrow={1} minHeight={0}>
+        {/* Left Panel - Agent Tree (25%) */}
+        <Box width="25%" borderRight paddingRight={1}>
+          <AgentTreePanel
+            tree={tree}
+            selectedId={selectedAgentId}
+            onSelect={handleSelectAgent}
+            onToggleOutput={handleToggleOutput}
+            t={t}
+            cursor={cursor}
+            setCursor={setCursor}
+            sort={sort}
+            setSort={setSort}
+            filter={filter}
+            setFilter={setFilter}
+          />
         </Box>
-      ) : mode === 'list' ? (
-        <Box flexDirection="column" flexGrow={1} flexShrink={1} minHeight={0}>
-          <GanttStrip cols={cols} cursor={cursor} flatNodes={rows} maxRows={6} now={now} t={t} />
-
-          <Box flexDirection="column" flexGrow={0} flexShrink={0} overflow="hidden">
-            {rows.slice(listWindowStart, listWindowStart + rowsH).map((node, i) => (
-              <ListRow
-                active={listWindowStart + i === cursor}
-                index={listWindowStart + i}
-                key={node.item.id}
-                node={node}
-                peak={peak}
-                t={t}
-                width={cols}
-              />
-            ))}
-          </Box>
+        
+        {/* Center Panel - Output (50%) */}
+        <Box width="50%" borderRight paddingX={1}>
+          <AgentOutputPanel
+            node={selected}
+            t={t}
+            showThinking={showThinking}
+            setShowThinking={setShowThinking}
+            showToolCalls={showToolCalls}
+            setShowToolCalls={setShowToolCalls}
+            showIntermediate={showIntermediate}
+            setShowIntermediate={setShowIntermediate}
+          />
         </Box>
-      ) : (
-        <Box flexDirection="row" flexGrow={1} flexShrink={1} minHeight={0}>
-          <ScrollBox flexDirection="column" flexGrow={1} flexShrink={1} ref={detailScrollRef}>
-            <Box flexDirection="column" paddingBottom={4} paddingRight={1}>
-              {selected ? <Detail id={formatRowId(cursor).trim()} node={selected} t={t} /> : null}
-            </Box>
-          </ScrollBox>
-
-          <NoSelect flexShrink={0} marginLeft={1}>
-            <OverlayScrollbar scrollRef={detailScrollRef} t={t} tick={now} />
-          </NoSelect>
+        
+        {/* Right Panel - Telemetry (25%) */}
+        <Box width="25%" paddingLeft={1}>
+          <TelemetryPanel telemetry={useTelemetry(selectedAgentId, gw)} t={t} />
         </Box>
-      )}
+      </Box>
 
-      <Box flexDirection="column" marginTop={1}>
-        {flash ? <Text color={t.color.accent}>{flash}</Text> : null}
+      {/* Status Bar (100%) */}
+      <StatusBar totalTools={totals.totalTools} totalTokens={totals.inputTokens + totals.outputTokens} totalCost={totals.costUsd} t={t} />
 
-        {mode === 'list' ? (
-          <Text color={t.color.muted}>
-            ↑↓/jk move · g/G top/bottom · Enter/→ open detail{controlsHint} · s sort:{SORT_LABEL[sort]} · f filter:
-            {FILTER_LABEL[filter]}
-            {history.length > 0 ? ` · [ / ] history ${historyIndex}/${history.length}` : ''}
-            {' · q close'}
-          </Text>
-        ) : (
-          <Text color={t.color.muted}>
-            ↑↓/jk scroll · PgUp/PgDn page · g/G top/bottom · Esc/← back to list{controlsHint} · q close
-          </Text>
-        )}
+      {/* Flash messages */}
+      {flash ? (
+        <Box marginTop={1}>
+          <Text color={t.color.accent}>{flash}</Text>
+        </Box>
+      ) : null}
+
+      {/* Controls hint */}
+      <Box marginTop={1}>
+        <Text color={t.color.muted}>
+          ↑↓/jk move · s sort:{SORT_LABEL[sort]} · f filter:{FILTER_LABEL[filter]}
+          {history.length > 0 ? ` · [ / ] history ${historyIndex}/${history.length}` : ''}
+          {' · p pause · q close'}
+        </Text>
       </Box>
     </Box>
   )

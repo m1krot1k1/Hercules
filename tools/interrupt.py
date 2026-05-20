@@ -17,6 +17,7 @@ Usage in tools:
 import logging
 import os
 import threading
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ _interrupted_threads: set[int] = set()
 _lock = threading.Lock()
 
 
-def set_interrupt(active: bool, thread_id: int | None = None) -> None:
+def set_interrupt(active: bool, thread_id: Optional[int] = None) -> None:
     """Set or clear interrupt for a specific thread.
 
     Args:
