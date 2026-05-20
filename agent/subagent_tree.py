@@ -197,3 +197,42 @@ def render_subagent_tree(
         _render_node(root, prefix=" ", is_last=root_is_last)
 
     return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# Structured tree snapshot for TUI panel
+# ---------------------------------------------------------------------------
+
+def get_subagent_tree_snapshot() -> List[Dict[str, Any]]:
+    """Return a structured list of subagent records for the TUI panel.
+
+    Each record has: subagent_id, goal, status, depth, parent_id,
+    started_at, tool_count, last_tool, model, reasoning.
+    """
+    _gc_completed_subagents()
+    agents: List[Dict[str, Any]] = _list_active_subagents()
+
+    now = time.monotonic()
+    visible: List[Dict[str, Any]] = []
+    for rec in agents:
+        status = rec.get("status", "running")
+        if status == "running":
+            visible.append(rec)
+            continue
+        completed_at = rec.get("completed_at", 0)
+        if now - completed_at < _VISIBLE_AFTER_COMPLETION:
+            visible.append(rec)
+
+    return visible
+
+
+def get_subagent_detail(subagent_id: str) -> Optional[Dict[str, Any]]:
+    """Return detailed info about a specific subagent by ID.
+
+    Includes reasoning/thoughts if available.
+    """
+    agents: List[Dict[str, Any]] = _list_active_subagents()
+    for rec in agents:
+        if rec.get("subagent_id") == subagent_id:
+            return rec
+    return None
