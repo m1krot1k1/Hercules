@@ -879,6 +879,15 @@ def _build_child_progress_callback(
                 if rec is not None:
                     rec["tool_count"] = _tool_count[0]
                     rec["last_tool"] = tool_name or ""
+                    # Store recent tool calls for TUI tree panel display
+                    preview_short = (
+                        (preview[:60] + "...") if preview and len(preview) > 60
+                        else (preview or "")
+                    )
+                    recent = rec.setdefault("recent_tools", [])
+                    recent.append((tool_name or "", preview_short))
+                    if len(recent) > 10:
+                        recent.pop(0)
         if spinner:
             short = (
                 (preview[:35] + "...")
@@ -1510,6 +1519,7 @@ def _run_single_child(
                 "status": "running",
                 "tool_count": 0,
                 "last_tool": "",
+                "recent_tools": [],  # [(tool_name, preview), ...] — last 10 for TUI
                 "reasoning": "",
                 "agent": child,
             }

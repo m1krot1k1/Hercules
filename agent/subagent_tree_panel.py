@@ -57,7 +57,7 @@ class TreeNode:
     """A node in the subagent tree for interactive navigation."""
     __slots__ = (
         "subagent_id", "goal", "status", "depth", "started_at",
-        "tool_count", "last_tool", "model", "parent_id",
+        "tool_count", "last_tool", "recent_tools", "model", "parent_id",
         "children", "expanded", "reasoning",
     )
 
@@ -69,6 +69,7 @@ class TreeNode:
         self.started_at = data.get("started_at", time.monotonic())
         self.tool_count = data.get("tool_count", 0)
         self.last_tool = data.get("last_tool", "")
+        self.recent_tools = data.get("recent_tools", [])  # [(tool_name, preview), ...]
         self.model = data.get("model", "")
         self.parent_id = data.get("parent_id")
         self.children: List["TreeNode"] = []
@@ -343,12 +344,33 @@ class SubagentTreePanel:
                     parts.append(("class:tree.reasoning", f"  {reasoning}\n"))
                 else:
                     parts.append(("class:tree.running", "  ⚡ Running — waiting for first action...\n"))
-                # Show tool history hint
-                if node.tool_count and node.last_tool:
-                    parts.append(("class:tree.idle",
-                        f"\n  Recent: {node.last_tool[:50]}"
-                        f"{'...' if len(node.last_tool) > 50 else ''}"
-                        f" (+{node.tool_count - 1} more)\n"))
+                # Show recent tool calls if available
+                recent = node.recent_tools if node.recent_tools else (
+                    detail.get("recent_tools", []) if detail else []
+                )
+                if recent:
+                    parts.append(("class:tree.idle", "\n  Recent tools:\n"))
+                    for tool_name, tool_preview in recent[-5:]:  # last 5
+                        emoji = "🔧"
+                        if "search" in tool_name or "find" in tool_name:
+                            emoji = "🔍"
+                        elif "read" in tool_name:
+                            emoji = "📖"
+                        elif "terminal" in tool_name or "bash" in tool_name:
+                            emoji = "⚡"
+                        elif "write" in tool_name or "patch" in tool_name:
+                            emoji = "✏️"
+                        elif "delegate" in tool_name:
+                            emoji = "🔀"
+                        elif "browser" in tool_name:
+                            emoji = "🌐"
+                        elif "think" in tool_name:
+                            emoji = "💭"
+                        tool_line = f"    {emoji} {tool_name}"
+                        if tool_preview:
+                            preview_trunc = tool_preview[:45] + ("..." if len(tool_preview) > 45 else "")
+                            tool_line += f": {preview_trunc}"
+                        parts.append(("class:tree.idle", tool_line + "\n"))
 
             # ── Completed agent: show summary ──
             elif node.status == "completed":
