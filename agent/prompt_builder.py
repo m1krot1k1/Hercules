@@ -1394,7 +1394,7 @@ def _load_claude_md(cwd_path: Path) -> str:
 
 
 def _load_cursorrules(cwd_path: Path) -> str:
-    """.cursorrules + .cursor/rules/*.mdc — cwd only."""
+    """.cursorrules + .cursor/rules/*.mdc + rules/*.mdc — cwd only (walk to git root for rules/)."""
     cursorrules_content = ""
     cursorrules_file = cwd_path / ".cursorrules"
     if cursorrules_file.exists():
@@ -1406,6 +1406,7 @@ def _load_cursorrules(cwd_path: Path) -> str:
         except Exception as e:
             logger.debug("Could not read .cursorrules: %s", e)
 
+    # .cursor/rules/*.mdc
     cursor_rules_dir = cwd_path / ".cursor" / "rules"
     if cursor_rules_dir.exists() and cursor_rules_dir.is_dir():
         mdc_files = sorted(cursor_rules_dir.glob("*.mdc"))
@@ -1417,6 +1418,40 @@ def _load_cursorrules(cwd_path: Path) -> str:
                     cursorrules_content += f"## .cursor/rules/{mdc_file.name}\n\n{content}\n\n"
             except Exception as e:
                 logger.debug("Could not read %s: %s", mdc_file, e)
+
+    # rules/*.mdc — walk up to git root to find the project rules/ directory
+    # This is the Hercules project-specific rules directory that contains
+    # orchestrator.mdc, specialists.mdc, etc.
+    search_path = cwd_path
+    for _ in range(10):  # max 10 levels up
+        rules_dir = search_path / "rules"
+        if rules_dir.exists() and rules_dir.is_dir():
+            # Check for .git to confirm we're at the project root
+            if (search_path / ".git").exists() or (search_path / "AGENTS.md").exists():
+                mdc_files = sorted(rules_dir.glob("*.mdc"))
+                # Also include .mdc files in subdirectories (e.g., rules/agent-manager/)
+                mdc_files += sorted(rules_dir.rglob("*.mdc"))
+                # Deduplicate while preserving order
+                seen = set()
+                unique_mdc = []
+                for f in mdc_files:
+                    if f not in seen:
+                        seen.add(f)
+                        unique_mdc.append(f)
+                for mdc_file in unique_mdc:
+                    try:
+                        content = mdc_file.read_text(encoding="utf-8").strip()
+                        if content:
+                            rel_path = mdc_file.relative_to(search_path)
+                            content = _scan_context_content(content, str(rel_path))
+                            cursorrules_content += f"## {rel_path}\n\n{content}\n\n"
+                    except Exception as e:
+                        logger.debug("Could not read %s: %s", mdc_file, e)
+                break
+        parent = search_path.parent
+        if parent == search_path:
+            break
+        search_path = parent
 
     if not cursorrules_content:
         return ""
@@ -1430,7 +1465,7 @@ def build_context_files_prompt(cwd: Optional[str] = None, skip_soul: bool = Fals
       1. .hermes.md / HERMES.md  (walk to git root)
       2. AGENTS.md / agents.md   (cwd only)
       3. CLAUDE.md / claude.md   (cwd only)
-      4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
+      4. .cursorrules / .cursor/rules/*.mdc / rules/*.mdc  (cwd + walk to git root)
 
     SOUL.md from HERMES_HOME is independent and always included when present.
     Each context source is capped at 20,000 chars.
