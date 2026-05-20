@@ -182,7 +182,47 @@ def _register_subagent(record: Dict[str, Any]) -> None:
 
 def _unregister_subagent(subagent_id: str) -> None:
     with _active_subagents_lock:
-        _active_subagents.pop(subagent_id, None)
+        rec = _active_subagents.get(subagent_id)
+        if rec is not None:
+            rec["status"] = "completed"
+            rec["completed_at"] = round(time.monotonic(), 1)
+            # Keep in registry for tree display; cleaned up
+            # after TUI session or by _gc_completed_subagents()
+
+
+def _mark_subagent_failed(subagent_id: str, error: str = "") -> None:
+    """Mark a subagent as failed instead of removing it."""
+    with _active_subagents_lock:
+        rec = _active_subagents.get(subagent_id)
+        if rec is not None:
+            rec["status"] = "failed"
+            rec["completed_at"] = round(time.monotonic(), 1)
+            rec["error"] = str(error)[:200]
+
+
+_MAX_COMPLETED_AGE = 300  # keep completed/failed records for 5 minutes
+
+
+def _gc_completed_subagents() -> int:
+    """Purge completed/failed subagent records older than _MAX_COMPLETED_AGE seconds.
+
+    Called periodically by the TUI render loop so dead entries
+    don't accumulate forever.  Returns the number purged.
+    """
+    now = time.monotonic()
+    to_remove: List[str] = []
+    with _active_subagents_lock:
+        for sid, rec in list(_active_subagents.items()):
+            status = rec.get("status", "running")
+            if status in {"completed", "failed"}:
+                completed_at = rec.get("completed_at", 0)
+                if now - completed_at > _MAX_COMPLETED_AGE:
+                    to_remove.append(sid)
+        for sid in to_remove:
+            _active_subagents.pop(sid, None)
+    if to_remove:
+        logger.debug("GC purged %d stale subagent records", len(to_remove))
+    return len(to_remove)
 
 
 def interrupt_subagent(subagent_id: str) -> bool:
@@ -1849,10 +1889,19 @@ def _run_single_child(
         if _heartbeat_thread.ident is not None:
             _heartbeat_thread.join(timeout=5)
 
-        # Drop the TUI-facing registry entry.  Safe to call even if the
-        # child was never registered (e.g. ID missing on test doubles).
+        # Mark the TUI-facing registry entry as done/failed instead of
+        # removing it, so the tree view persists until GC sweeps it.
         if _subagent_id:
-            _unregister_subagent(_subagent_id)
+            with _active_subagents_lock:
+                rec = _active_subagents.get(_subagent_id)
+            if rec is not None:
+                inner_status = rec.get("status", "running")
+                if inner_status == "running":
+                    # Child threw before producing an entry — mark as failed
+                    _mark_subagent_failed(_subagent_id, "")
+                else:
+                    # Already marked completed/failed by successful path
+                    pass
 
         if child_pool is not None and leased_cred_id is not None:
             try:

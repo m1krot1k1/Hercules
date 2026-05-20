@@ -710,6 +710,11 @@ class KawaiiSpinner:
         skin = _get_skin()
         wings = skin.get_spinner_wings() if skin else []
 
+        # Subagent tree rendering: refresh roughly every second (8 ticks × 0.12s ≈ 1s).
+        # We use gc=False on the fast path and a separate counter for the
+        # slower GC sweep (every ~30s).
+        _subagent_tree_ticks = 0
+        _subagent_tree_last_text: str | None = None
         while self.running:
             if os.getenv("HERMES_SPINNER_PAUSE"):
                 time.sleep(0.1)
@@ -725,6 +730,23 @@ class KawaiiSpinner:
             self._write(f"\r{line}{' ' * pad}", end='', flush=True)
             self.last_line_len = len(line)
             self.frame_idx += 1
+
+            # Refresh subagent tree every ~8 ticks (≈1 second) when subagents exist
+            _subagent_tree_ticks += 1
+            if _subagent_tree_ticks % 8 == 0:
+                try:
+                    from agent.subagent_tree import render_subagent_tree
+                    do_gc = _subagent_tree_ticks % (8 * 30) == 0  # GC every ~30s
+                    tree = render_subagent_tree(gc=do_gc)
+                    if tree != _subagent_tree_last_text:
+                        _subagent_tree_last_text = tree
+                        if tree:
+                            # Split into lines and print each above the spinner
+                            for tree_line in tree.split("\n"):
+                                self.print_above(tree_line)
+                except Exception:
+                    pass  # Defensive — never let tree rendering kill the spinner
+
             time.sleep(0.12)
 
     def start(self):
