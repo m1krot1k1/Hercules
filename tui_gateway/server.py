@@ -1586,6 +1586,29 @@ def _on_tool_progress(
     if event_type == "reasoning.available" and preview:
         _emit("reasoning.available", sid, {"text": str(preview)})
         return
+    if event_type == "tokens.updated":
+        # Emit tokens update for TUI to refresh telemetry
+        payload = {"type": "tokens_updated"}
+        for int_key in (
+            "input_tokens",
+            "output_tokens",
+            "reasoning_tokens",
+            "api_calls",
+            "total_tokens",
+        ):
+            val = _kwargs.get(int_key)
+            if val is not None:
+                try:
+                    payload[int_key] = int(val)
+                except (TypeError, ValueError):
+                    pass
+        if _kwargs.get("cost_usd") is not None:
+            try:
+                payload["cost_usd"] = float(_kwargs["cost_usd"])
+            except (TypeError, ValueError):
+                pass
+        _emit("tokens.updated", sid, payload)
+        return
     if event_type.startswith("subagent."):
         payload = {
             "goal": str(_kwargs.get("goal") or ""),
@@ -1644,6 +1667,20 @@ def _on_tool_progress(
             payload["tool_preview"] = str(preview)
             payload["text"] = str(preview)
         _emit(event_type, sid, payload)
+        
+        # Also emit subagent.tree_updated so the TUI tree refreshes with new tokens
+        if event_type == "subagent.complete":
+            try:
+                from tools.delegate_tool import list_active_subagents
+                agents = list_active_subagents()
+                _emit("subagent.tree_updated", sid, {
+                    "type": "update",
+                    "agents": agents,
+                })
+                import sys
+                print(f"DEBUG _on_tool_progress: emitted subagent.tree_updated with {len(agents)} agents", file=sys.stderr)
+            except Exception as exc:
+                logger.debug("Failed to emit subagent.tree_updated: %s", exc)
 
 
 def _agent_cbs(sid: str) -> dict:
@@ -6678,3 +6715,149 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 5002, "command timed out (30s)")
     except Exception as e:
         return _err(rid, 5003, str(e))
+
+
+# ── Methods: Achievements ─────────────────────────────────────
+
+@media("achievement.check")
+def _(rid, params: dict) -> dict:
+    """Check achievements for an agent based on telemetry data."""
+    agent_id = params.get("agent_id", "")
+    telemetry = params.get("telemetry", {})
+    
+    if not agent_id:
+        return _err(rid, 4018, "agent_id required")
+    
+    try:
+        from agent.achievement_system import get_achievement_system
+        
+        system = get_achievement_system()
+        new_unlocked = system.check_achievements(agent_id, telemetry)
+        
+        # Get all unlocked achievements for the agent
+        unlocked = system.get_unlocked(agent_id)
+        
+        return _ok(rid, {
+            "new_unlocked": [u for u in unlocked if u in new_unlocked],
+            "unlocked": unlocked
+        })
+    except Exception as e:
+        return _err(rid, 5036, str(e))
+
+
+@media("achievements.list")
+def _(rid, params: dict) -> dict:
+    """List all achievements and unlocked ones for an agent."""
+    agent_id = params.get("agent_id", "")
+    
+    try:
+        from agent.achievement_system import get_achievement_system
+        
+        system = get_achievement_system()
+        all_achievements = system.get_all_achievements()
+        
+        unlocked = []
+        if agent_id:
+            unlocked = system.get_unlocked(agent_id)
+        
+        return _ok(rid, {
+            "achievements": all_achievements,
+            "unlocked": unlocked
+        })
+    except Exception as e:
+        return _err(rid, 5037, str(e))
+
+
+@media("achievement.unlock")
+def _(rid, params: dict) -> dict:
+    """Manually unlock an achievement for an agent."""
+    agent_id = params.get("agent_id", "")
+    achievement_id = params.get("achievement_id", "")
+    
+    if not agent_id or not achievement_id:
+        return _err(rid, 4019, "agent_id and achievement_id required")
+    
+    try:
+        from agent.achievement_system import get_achievement_system
+        
+        system = get_achievement_system()
+        result = system.unlock_achievement(agent_id, achievement_id)
+        
+        return _ok(rid, {"success": result})
+    except Exception as e:
+        return _err(rid, 5038, str(e))
+
+# ── Methods: Checkpoints ─────────────────────────────────────
+
+@media("checkpoint.list")
+def _(rid, params: dict) -> dict:
+    """List all checkpoints for a session."""
+    session_id = params.get("session_id", "")
+    if not session_id:
+        return _err(rid, 4020, "session_id required")
+    
+    try:
+        from agent.checkpoint_manager import AgentCheckpoint
+        
+        checkpoint_obj = AgentCheckpoint(session_id)
+        checkpoints = checkpoint_obj.list_checkpoints()
+        return _ok(rid, {"checkpoints": checkpoints})
+    except Exception as e:
+        return _err(rid, 5039, str(e))
+
+
+@media("checkpoint.restore")
+def _(rid, params: dict) -> dict:
+    """Restore a checkpoint for a session."""
+    session_id = params.get("session_id", "")
+    checkpoint_file = params.get("checkpoint_file", "")
+    
+    if not session_id or not checkpoint_file:
+        return _err(rid, 4021, "session_id and checkpoint_file required")
+    
+    try:
+        from agent.checkpoint_manager import AgentCheckpoint
+        
+        checkpoint_obj = AgentCheckpoint(session_id)
+        result = checkpoint_obj.load_checkpoint(checkpoint_file)
+        return _ok(rid, {"success": result is not None, "state": result})
+    except Exception as e:
+        return _err(rid, 5040, str(e))
+
+
+@media("checkpoint.delete")
+def _(rid, params: dict) -> dict:
+    """Delete a checkpoint."""
+    checkpoint_file = params.get("checkpoint_file", "")
+    
+    if not checkpoint_file:
+        return _err(rid, 4022, "checkpoint_file required")
+    
+    try:
+        from agent.checkpoint_manager import AgentCheckpoint
+        
+        # Extract session_id from filename or just use the file path
+        checkpoint_obj = AgentCheckpoint("temp")
+        result = checkpoint_obj.delete_checkpoint(checkpoint_file)
+        return _ok(rid, {"success": result})
+    except Exception as e:
+        return _err(rid, 5041, str(e))
+
+
+@media("checkpoint.create")
+def _(rid, params: dict) -> dict:
+    """Manually create a checkpoint."""
+    session_id = params.get("session_id", "")
+    state_dict = params.get("state_dict", {})
+    
+    if not session_id:
+        return _err(rid, 4023, "session_id required")
+    
+    try:
+        from agent.checkpoint_manager import AgentCheckpoint
+        
+        checkpoint_obj = AgentCheckpoint(session_id)
+        checkpoint_file = checkpoint_obj.save_checkpoint(state_dict)
+        return _ok(rid, {"checkpoint_file": checkpoint_file})
+    except Exception as e:
+        return _err(rid, 5042, str(e))

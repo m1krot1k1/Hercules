@@ -362,7 +362,7 @@ def _register_subagent(record: Dict[str, Any]) -> None:
     
     # Create telemetry entry
     parent_id = record.get("parent_id")
-    agent_name = record.get("goal", sid)[:50]  # Use goal as name, truncated
+    agent_name = record.get("agent_name", record.get("goal", sid)[:50])
     telemetry = AgentTelemetry(
         agent_id=sid,
         agent_name=agent_name,
@@ -386,6 +386,11 @@ def _unregister_subagent(
     tokens_out: int = 0,
     cost_usd: float = 0.0,
 ) -> None:
+    import sys
+    print(f"DEBUG _unregister_subagent: subagent_id={subagent_id}, "
+          f"tokens_in={tokens_in}, tokens_out={tokens_out}, cost_usd={cost_usd}",
+          file=sys.stderr)
+    
     with _active_subagents_lock:
         rec = _active_subagents.get(subagent_id)
         if rec is not None:
@@ -398,6 +403,7 @@ def _unregister_subagent(
             rec["cost_usd"] = float(cost_usd) if cost_usd else rec.get("cost_usd", 0.0)
             # Keep in registry for tree display; cleaned up
             # after TUI session or by _gc_completed_subagents()
+            print(f"DEBUG _unregister_subagent: updated rec={rec}", file=sys.stderr)
 
     # Update telemetry with final metrics
     if subagent_id in _telemetry_dict:
@@ -410,6 +416,7 @@ def _unregister_subagent(
         # Recalculate rollup metrics for this agent and its ancestors
         try:
             calculate_rollup_metrics(subagent_id, _telemetry_dict)
+            print(f"DEBUG _unregister_subagent: rollup calculated for {subagent_id}", file=sys.stderr)
         except Exception as exc:
             logger.debug("Rollup calculation failed for %s: %s", subagent_id, exc)
 
@@ -774,7 +781,7 @@ def _preserve_parent_mcp_toolsets(
 
 
 DEFAULT_MAX_ITERATIONS = 50
-DEFAULT_CHILD_TIMEOUT = 600  # seconds before a child agent is considered stuck
+DEFAULT_CHILD_TIMEOUT = 1800  # seconds before a child agent is considered stuck (increased from 600)
 _HEARTBEAT_INTERVAL = 30  # seconds between parent activity heartbeats during delegation
 # Stale-heartbeat thresholds. A child with no API-call progress is either:
 #   - idle between turns (no current_tool) — probably stuck on a slow API call
@@ -1764,6 +1771,7 @@ def _run_single_child(
                 "parent_id": _parent_sid if isinstance(_parent_sid, str) else None,
                 "depth": _tui_depth,
                 "goal": goal,
+                "agent_name": goal,  # Will be overridden by record.get("agent_name", ...) in _register_subagent if provided
                 "model": (
                     getattr(child, "model", None)
                     if isinstance(getattr(child, "model", None), str)
@@ -2314,7 +2322,7 @@ def delegate_task(
     acp_args: Optional[List[str]] = None,
     role: Optional[str] = None,
     parent_agent=None,
-    enable_swarm_communication: bool = False,
+    enable_swarm_communication: bool = True,  # Enable P2P communication by default
 ) -> str:
     """
     Spawn one or more child agents to handle delegated tasks.

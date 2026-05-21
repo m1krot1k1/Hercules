@@ -1,4 +1,4 @@
-import { Box, NoSelect, ScrollBox, type ScrollBoxHandle, Text, useInput, useStdout } from '@hermes/ink'
+import { AlternateScreen, Box, NoSelect, ScrollBox, type ScrollBoxHandle, Text, useInput, useStdout } from '@hermes/ink'
 import { useStore } from '@nanostores/react'
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -12,10 +12,10 @@ import { patchOverlayState } from '../app/overlayStore.js'
 import { $spawnDiff, $spawnHistory, clearDiffPair, type SpawnSnapshot } from '../app/spawnHistoryStore.js'
 import { useTurnSelector } from '../app/turnStore.js'
 import type { GatewayClient } from '../gatewayClient.js'
-import type {
-  AchievementData,
+import type { AchievementData,
   AchievementUnlockedEvent,
   AchievementsResponse,
+  Checkpoint,
   DelegationPauseResponse,
   DelegationStatusResponse,
   DependencyGraphData,
@@ -23,6 +23,8 @@ import type {
   SubagentInterruptResponse,
   UnlockedAchievementData
 } from '../gatewayTypes.js'
+
+import { CheckpointsPanel } from './CheckpointsPanel'
 import { asRpcResult } from '../lib/rpc.js'
 import {
   buildSubagentTree,
@@ -1333,7 +1335,8 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
   }
 
   return (
-    <Box alignItems="stretch" flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
+    <AlternateScreen>
+      <Box alignItems="stretch" flexDirection="column" flexGrow={1} width="100%" height="100%" paddingX={1} paddingY={1}>
       {/* Header */}
       <Box flexDirection="column" marginBottom={1}>
         <Text wrap="truncate-end">
@@ -1377,12 +1380,19 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
           />
         </Box>
         
-        {/* Right Panel - Achievements + Telemetry (25%) */}
+        {/* Right Panel - Achievements + Checkpoints + Telemetry (25%) */}
         <Box width="25%" paddingLeft={1} flexDirection="column">
           <Box marginBottom={1}>
             <AchievementsPanel
               achievements={achievements}
               unlockedAchievements={unlockedAchievements}
+              t={t}
+            />
+          </Box>
+          <Box marginBottom={1}>
+            <CheckpointsPanel
+              gw={gw}
+              sessionId={selectedAgentId || ''}
               t={t}
             />
           </Box>
@@ -1418,9 +1428,10 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
           ↑↓/jk move · s sort:{SORT_LABEL[sort]} · f filter:{FILTER_LABEL[filter]}
           {history.length > 0 ? ` · [ / ] history ${historyIndex}/${history.length}` : ''}
           {' · p pause · q close'}
-        </Text>
+          </Text>
       </Box>
     </Box>
+    </AlternateScreen>
   )
 }
 

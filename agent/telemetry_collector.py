@@ -23,6 +23,7 @@ class AgentTelemetry:
     tokens_output: int = 0
     tools_called: int = 0
     cost_usd: float = 0.0
+    retries: int = 0  # Track API call retries (e.g., rate limit retries)
 
     # Children tracking
     children: List[str] = field(default_factory=list)
@@ -32,6 +33,7 @@ class AgentTelemetry:
     total_cost: float = 0.0
     total_tools: int = 0
     total_time: float = 0.0
+    total_retries: int = 0  # Rollup of retries including children
 
     def __post_init__(self):
         """Initialize rollup metrics from direct metrics if not set."""
@@ -43,6 +45,8 @@ class AgentTelemetry:
             self.total_tools = self.tools_called
         if self.total_time == 0.0:
             self.total_time = self.execution_time
+        if self.total_retries == 0:
+            self.total_retries = self.retries
 
 
 def calculate_rollup_metrics(
@@ -62,6 +66,7 @@ def calculate_rollup_metrics(
     total_cost = agent.cost_usd
     total_tools = agent.tools_called
     total_time = agent.execution_time
+    total_retries = agent.retries  # Include direct retries
 
     # Recursively add all children's rollup metrics
     for child_id in agent.children:
@@ -71,12 +76,14 @@ def calculate_rollup_metrics(
             total_cost += child_rollup.total_cost
             total_tools += child_rollup.total_tools
             total_time += child_rollup.total_time
+            total_retries += child_rollup.total_retries
 
     # Update rollup fields
     agent.total_tokens = total_tokens
     agent.total_cost = total_cost
     agent.total_tools = total_tools
     agent.total_time = total_time
+    agent.total_retries = total_retries
 
     return agent
 
@@ -125,6 +132,7 @@ class TelemetryCollector:
         # ... during execution ...
         collector.add_tokens(input_tokens=100, output_tokens=50)
         collector.add_tool_call(cost=0.05)
+        collector.add_retry()  # Track API retry (e.g., rate limit)
         # ... at end ...
         telemetry = collector.finalize()
     """
@@ -138,6 +146,7 @@ class TelemetryCollector:
         self.tokens_output = 0
         self.tools_called = 0
         self.cost_usd = 0.0
+        self.retries = 0  # Track API call retries
         self._children: List[str] = []
 
     def add_tokens(self, input_tokens: int, output_tokens: int) -> None:
@@ -150,6 +159,10 @@ class TelemetryCollector:
         self.tools_called += 1
         self.cost_usd += cost
 
+    def add_retry(self) -> None:
+        """Record an API call retry (e.g., rate limit 429)."""
+        self.retries += 1
+
     def add_child(self, child_id: str) -> None:
         """Register a child agent."""
         if child_id not in self._children:
@@ -160,8 +173,40 @@ class TelemetryCollector:
         Create an AgentTelemetry object upon completion.
 
         Calculates execution time and populates all fields.
+        Also checks for achievements based on collected telemetry.
         """
+        import sys
         execution_time = time.time() - self.start_time
+        
+        # Build telemetry dict for achievement checking
+        telemetry_dict = {
+            "tasks_completed": 1,  # This is one task completion
+            "tokens_saved": max(0, self.tokens_input + self.tokens_output - 1000),  # Example metric
+            "task_duration": execution_time,
+            "tools_used": [],  # Would need to track tool names separately
+            "autonomous_fixes": 0,  # Would need to track from agent
+            "checkpoints_created": 0,  # Would need to track from agent
+            "swarm_messages": 0,  # Would need to track from swarm bus
+        }
+        
+        # Check achievements
+        try:
+            from agent.achievement_system import get_achievement_system
+            system = get_achievement_system()
+            new_achievements = system.check_achievements(self.agent_id, telemetry_dict)
+            if new_achievements:
+                print(f"DEBUG TelemetryCollector: New achievements unlocked: {[a.name for a in new_achievements]}",
+                      file=sys.stderr)
+        except Exception as e:
+            print(f"DEBUG TelemetryCollector: Achievement check failed: {e}",
+                  file=sys.stderr)
+        
+        print(f"DEBUG TelemetryCollector.finalize: agent_id={self.agent_id}, "
+              f"input={self.tokens_input}, output={self.tokens_output}, "
+              f"cost={self.cost_usd}, tools={self.tools_called}, "
+              f"retries={self.retries}, "
+              f"time={execution_time:.2f}s",
+              file=sys.stderr)
         return AgentTelemetry(
             agent_id=self.agent_id,
             agent_name=self.agent_name,
@@ -171,12 +216,14 @@ class TelemetryCollector:
             tokens_output=self.tokens_output,
             tools_called=self.tools_called,
             cost_usd=self.cost_usd,
+            retries=self.retries,  # Include retries in telemetry
             children=self._children.copy(),
             # Rollup fields initialized from direct metrics
             total_tokens=self.tokens_input + self.tokens_output,
             total_cost=self.cost_usd,
             total_tools=self.tools_called,
             total_time=execution_time,
+            total_retries=self.retries,  # Initialize rollup with direct retries
         )
 
 

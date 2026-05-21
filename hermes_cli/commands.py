@@ -158,8 +158,11 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("voice", "Toggle voice mode", "Configuration",
                args_hint="[on|off|tts|status]", subcommands=("on", "off", "tts", "status")),
     CommandDef("busy", "Control what Enter does while Hermes is working", "Configuration",
-               cli_only=True, args_hint="[queue|steer|interrupt|status]",
-               subcommands=("queue", "steer", "interrupt", "status")),
+                cli_only=True, args_hint="[queue|steer|interrupt|status]",
+                subcommands=("queue", "steer", "interrupt", "status")),
+    CommandDef("start_mode", "Toggle auto-prefix mode (auto wraps messages with /start, manual requires explicit /start)", "Configuration",
+                args_hint="[auto|manual|status]",
+                subcommands=("auto", "manual", "status")),
 
     # Tools & Skills
     CommandDef("tools", "Manage tools: /tools [list|disable|enable] [name...]", "Tools & Skills",

@@ -389,14 +389,14 @@ export const AppLayout = memo(function AppLayout({
 
   return (
     <Shell {...shellProps}>
-      <Box flexDirection="column" flexGrow={1}>
-        <Box flexDirection="row" flexGrow={1}>
+      <Box flexDirection="column" flexGrow={1} width="100%" height="100%">
+        <Box flexDirection="row" flexGrow={1} width="100%" height="100%">
           {overlay.agents ? (
-            <PerfPane id="agents">
+            <PerfPane id="agents" width="100%" height="100%">
               <AgentsOverlayPane />
             </PerfPane>
           ) : (
-            <PerfPane id="transcript">
+            <PerfPane id="transcript" width="100%" height="100%">
               <TranscriptPane actions={actions} composer={composer} progress={progress} transcript={transcript} />
             </PerfPane>
           )}

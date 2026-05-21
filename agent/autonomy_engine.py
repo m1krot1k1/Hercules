@@ -6,6 +6,7 @@ Handles the decision of when to trigger evaluation and correction loops.
 """
 
 import logging
+import time
 from typing import Dict, Optional, Any, Callable
 
 from .self_evaluation import SelfEvaluation
@@ -38,7 +39,7 @@ class AutonomyEngine:
         """
         self.agent_id = agent_id
         self.skip_self_evaluation = skip_self_evaluation
-        
+
         if not skip_self_evaluation:
             self.evaluator = SelfEvaluation(
                 agent_id=agent_id,
@@ -71,8 +72,11 @@ class AutonomyEngine:
                 "skipped": bool
             }
         """
+        start_time = time.time()
+        logger.info(f"[AutonomyEngine] [{self.agent_id}] process_result started")
+
         if self.skip_self_evaluation or self.evaluator is None:
-            logger.info(f"[AutonomyEngine] Self-evaluation skipped for {self.agent_id}")
+            logger.info(f"[AutonomyEngine] [{self.agent_id}] Self-evaluation skipped")
             return {
                 "final_result": initial_result,
                 "passed": True,  # Assume passed if skipped
@@ -81,15 +85,22 @@ class AutonomyEngine:
                 "skipped": True
             }
 
-        logger.info(f"[AutonomyEngine] Processing result for {self.agent_id}")
-        
+        logger.info(f"[AutonomyEngine] [{self.agent_id}] Processing result through evaluation loop")
         try:
             eval_loop_result = self.evaluator.run_evaluation_loop(
                 initial_result=initial_result,
                 goal=goal,
                 context=context
             )
-            
+
+            elapsed = time.time() - start_time
+            logger.info(
+                f"[AutonomyEngine] [{self.agent_id}] Evaluation loop completed: "
+                f"passed={eval_loop_result['passed']}, "
+                f"iterations={eval_loop_result['iterations']}, "
+                f"elapsed={elapsed:.2f}s"
+            )
+
             return {
                 "final_result": eval_loop_result["final_result"],
                 "passed": eval_loop_result["passed"],
@@ -97,9 +108,14 @@ class AutonomyEngine:
                 "evaluation_history": eval_loop_result["evaluation_history"],
                 "skipped": False
             }
-            
+
         except Exception as e:
-            logger.error(f"[AutonomyEngine] Error during evaluation loop: {e}", exc_info=True)
+            elapsed = time.time() - start_time
+            logger.error(
+                f"[AutonomyEngine] [{self.agent_id}] Error during evaluation loop "
+                f"after {elapsed:.2f}s: {e}",
+                exc_info=True
+            )
             # Fallback: return original result to avoid blocking the user
             return {
                 "final_result": initial_result,

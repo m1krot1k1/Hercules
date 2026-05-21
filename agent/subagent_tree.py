@@ -134,17 +134,23 @@ def render_subagent_tree(
 
     # ── Get telemetry tree for rollup metrics ──────────────────
     telemetry_tree = get_telemetry_tree()
-
+    
+    # DEBUG: Print telemetry data
+    import sys
+    print(f"DEBUG: telemetry_tree = {telemetry_tree}", file=sys.stderr)
+    
     # Build a lookup from subagent_id to telemetry for quick access
     telemetry_by_id: Dict[str, Any] = {}
-
+    
     def _build_telemetry_lookup(node: Dict[str, Any]):
         agent = node.get("agent")
         if agent:
             telemetry_by_id[agent.agent_id] = agent
+            # DEBUG: Print each agent's telemetry
+            print(f"DEBUG: agent_id={agent.agent_id}, tokens_in={agent.tokens_input}, tokens_out={agent.tokens_output}, cost={agent.cost_usd}", file=sys.stderr)
         for child in node.get("children", []):
             _build_telemetry_lookup(child)
-
+    
     if telemetry_tree:
         _build_telemetry_lookup(telemetry_tree)
 
@@ -192,9 +198,9 @@ def render_subagent_tree(
     ):
         status = node.get("status", "running")
         icon = _icon_for_status(status)
-        goal = (node.get("goal") or "")[:max_goal_chars]
-        if len(node.get("goal") or "") > max_goal_chars:
-            goal = goal.rstrip() + "..."
+        agent_name = node.get("agent_name", node.get("goal", "unknown")[:max_goal_chars])
+        if len(node.get("agent_name") or node.get("goal") or "") > max_goal_chars:
+            agent_name = agent_name.rstrip() + "..."
         elapsed = _elapsed_short(node.get("started_at", now))
         tool_count = node.get("tool_count", 0)
         last_tool = node.get("last_tool", "")
@@ -234,19 +240,19 @@ def render_subagent_tree(
         if status == "running" and node.get("reasoning", ""):
             reasoning = node.get("reasoning", "") or ""
             short_reason = reasoning[:40] + ("..." if len(reasoning) > 40 else "")
-            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            node_line = f"{icon} {agent_name}{model_part} ({elapsed}"
             if metrics_str:
                 node_line += f", {metrics_str}"
             node_line += ")"
             reason_line = f"{indent}   ┈ {short_reason}"
         elif last_tool and status == "running":
-            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            node_line = f"{icon} {agent_name}{model_part} ({elapsed}"
             if metrics_str:
                 node_line += f", {metrics_str}"
             node_line += f", {last_tool})"
             reason_line = None
         else:
-            node_line = f"{icon} {goal}{model_part} ({elapsed}"
+            node_line = f"{icon} {agent_name}{model_part} ({elapsed}"
             if metrics_str:
                 node_line += f", {metrics_str}"
             node_line += ")"

@@ -59,7 +59,7 @@ _KEYBINDING_HINT = "↑↓:sel  ←→:expand/collapse  Tab:Show/Hide output  Es
 class TreeNode:
     """A node in the subagent tree for interactive navigation."""
     __slots__ = (
-        "subagent_id", "goal", "status", "depth", "started_at",
+        "subagent_id", "goal", "agent_name", "status", "depth", "started_at",
         "tool_count", "last_tool", "recent_tools", "model", "parent_id",
         "children", "expanded", "reasoning",
         "tokens_in", "tokens_out", "cost_usd", "messages",
@@ -72,6 +72,7 @@ class TreeNode:
     def __init__(self, data: Dict[str, Any]):
         self.subagent_id = data.get("subagent_id", "")
         self.goal = (data.get("goal") or "")[:_MAX_GOAL_CHARS]
+        self.agent_name = data.get("agent_name", data.get("goal", "unknown")[:_MAX_GOAL_CHARS])
         self.status = data.get("status", "running")
         self.depth = data.get("depth", 0)
         self.started_at = data.get("started_at", time.monotonic())
@@ -417,7 +418,7 @@ class SubagentTreePanel:
                 if is_selected:
                     style = "class:tree.selected"
 
-                # Per-agent info line: icon + goal + elapsed + tools + tokens + cost
+                # Per-agent info line: icon + agent_name + elapsed + tools + tokens + cost
                 info_parts = []
                 if node.total_tools_rollup:
                     info_parts.append(f"{node.total_tools_rollup}t")
@@ -428,7 +429,7 @@ class SubagentTreePanel:
                 if node.total_cost_rollup > 0:
                     info_parts.append(f"${node.total_cost_rollup:.3f}")
                 info = " ".join(info_parts)
-                line = f"{indent}{expand_marker}{node.icon} {node.goal} ({info})\n"
+                line = f"{indent}{expand_marker}{node.icon} {node.agent_name} ({info})\n"
                 parts.append((style, line))
 
             # Footer: keybinding hint
@@ -457,7 +458,7 @@ class SubagentTreePanel:
             parts: List[Tuple[str, str]] = []
 
             # ── Header: agent info + token/cost bar ──
-            parts.append(("class:tree.header", f" {node.icon} {node.goal}\n"))
+            parts.append(("class:tree.header", f" {node.icon} {node.agent_name}\n"))
             model_str = f" [{node.model}]" if node.model else ""
             status_style = "class:tree.running" if node.status == "running" else "class:tree.idle"
             parts.append((status_style, f"   Status: {node.status}{model_str}\n"))

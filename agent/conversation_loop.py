@@ -1564,6 +1564,20 @@ def run_conversation(
                     agent.session_cache_read_tokens += canonical_usage.cache_read_tokens
                     agent.session_cache_write_tokens += canonical_usage.cache_write_tokens
                     agent.session_reasoning_tokens += canonical_usage.reasoning_tokens
+                    
+                    # Emit telemetry update event for TUI
+                    try:
+                        if hasattr(agent, "tool_progress_callback") and agent.tool_progress_callback:
+                            agent.tool_progress_callback("tokens.updated", None, None, None,
+                                input_tokens=agent.session_prompt_tokens,
+                                output_tokens=agent.session_completion_tokens,
+                                total_tokens=agent.session_total_tokens,
+                                reasoning_tokens=agent.session_reasoning_tokens,
+                                api_calls=agent.session_api_calls,
+                                cost_usd=agent.session_estimated_cost_usd,
+                            )
+                    except Exception as exc:
+                        logger.debug("Failed to emit tokens.updated: %s", exc)
 
                     # Log API call details for debugging/observability
                     _cache_pct = ""
@@ -2185,6 +2199,12 @@ def run_conversation(
                     )
 
                 retry_count += 1
+                # Track retry in telemetry (e.g., rate limit 429)
+                if hasattr(agent, 'telemetry_collector') and agent.telemetry_collector:
+                    try:
+                        agent.telemetry_collector.add_retry()
+                    except Exception:
+                        pass
                 elapsed_time = time.time() - api_start_time
                 agent._touch_activity(
                     f"API error recovery (attempt {retry_count}/{max_retries})"

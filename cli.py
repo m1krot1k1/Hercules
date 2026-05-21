@@ -8321,6 +8321,31 @@ class HermesCLI:
             self._handle_voice_command(cmd_original)
         elif canonical == "busy":
             self._handle_busy_command(cmd_original)
+        elif canonical == "start_mode":
+            # Handle /start_mode command - toggle auto-prefix mode
+            from hermes_cli.config import load_config, save_config
+            parts = cmd_original.split(None, 1)
+            arg = parts[1].strip().lower() if len(parts) > 1 else "status"
+            
+            config = load_config()
+            agent_cfg = config.get("agent", {})
+            current_mode = agent_cfg.get("start_mode", "auto")
+            
+            if arg == "status":
+                _cprint(f"  {_DIM}start_mode is currently: {current_mode}{_RST}")
+                _cprint(f"  {_DIM}auto = messages auto-wrapped with /start, manual = explicit /start required{_RST}")
+            elif arg in ("auto", "manual"):
+                agent_cfg["start_mode"] = arg
+                config["agent"] = agent_cfg
+                save_config(config)
+                _cprint(f"  {_GREEN}✓{_RST} start_mode set to: {arg}")
+                if arg == "auto":
+                    _cprint(f"  {_DIM}Messages will be auto-prefixed with /start{_RST}")
+                else:
+                    _cprint(f"  {_DIM}Use /start <message> explicitly to invoke orchestrator{_RST}")
+            else:
+                _cprint(f"  {_RED}✗{_RST} Invalid argument: {arg}")
+                _cprint(f"  {_DIM}Usage: /start_mode [auto|manual|status]{_RST}")
         else:
             # Check for user-defined quick commands (bypass agent loop, no LLM call)
             base_cmd = cmd_lower.split()[0]

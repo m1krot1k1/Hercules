@@ -613,3 +613,28 @@ export interface AchievementCheckResponse {
   new_unlocked?: Achievement[]
   unlocked?: Achievement[]
 }
+
+export interface Checkpoint {
+  filepath: string
+  filename: string
+  timestamp: number
+  formatted_time: string
+  agent_id: string
+}
+
+export interface CheckpointListResponse {
+  checkpoints: Checkpoint[]
+}
+
+export interface CheckpointRestoreResponse {
+  success: boolean
+  state?: any
+}
+
+export interface CheckpointDeleteResponse {
+  success: boolean
+}
+
+export interface CheckpointCreateResponse {
+  checkpoint_file: string
+}
