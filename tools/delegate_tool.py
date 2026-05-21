@@ -46,6 +46,8 @@ from tools import file_state
 from tools.terminal_tool import set_approval_callback as _set_subagent_approval_cb
 from utils import base_url_hostname, is_truthy_value
 
+from agent.swarm_bus import publish, get_swarm_bus
+
 # ---------------------------------------------------------------------------
 # Dynamic Agent Registry
 # ---------------------------------------------------------------------------
@@ -1600,6 +1602,7 @@ def _run_single_child(
     goal: str,
     child=None,
     parent_agent=None,
+    enable_swarm_communication: bool = False,
     **_kwargs,
 ) -> Dict[str, Any]:
     """
@@ -1607,6 +1610,37 @@ def _run_single_child(
     Returns a structured result dict.
     """
     child_start = time.monotonic()
+
+    # Swarm communication: publish start message
+    if enable_swarm_communication:
+        agent_id = getattr(child, '_subagent_id', f'agent_{task_index}')
+        try:
+            publish(
+                topic=f"agent/{agent_id}/status",
+                message={"status": "started", "goal": goal},
+                sender_id=agent_id,
+            )
+        except Exception as e:
+            logger.debug("Swarm publish start failed: %s", e)
+
+    # Swarm communication: progress callback for publishing intermediate results
+    if enable_swarm_communication:
+        agent_id = getattr(child, '_subagent_id', f'agent_{task_index}')
+
+        def _swarm_progress_callback(tool_name, result):
+            """Publish tool execution results to swarm bus."""
+            try:
+                result_preview = str(result)[:200] if result else ""
+                publish(
+                    topic=f"agent/{agent_id}/progress",
+                    message={"tool": tool_name, "result_preview": result_preview},
+                    sender_id=agent_id,
+                )
+            except Exception as e:
+                logger.debug("Swarm publish progress failed: %s", e)
+
+        # Store callback in child agent for use in tool_executor
+        child._swarm_progress_callback = _swarm_progress_callback
 
     # Get the progress callback from the child agent
     child_progress_cb = getattr(child, "tool_progress_callback", None)
@@ -2093,6 +2127,22 @@ def _run_single_child(
             except Exception as e:
                 logger.debug("Progress callback completion failed: %s", e)
 
+        # Swarm communication: publish completion message
+        if enable_swarm_communication:
+            agent_id = getattr(child, '_subagent_id', f'agent_{task_index}')
+            try:
+                publish(
+                    topic=f"agent/{agent_id}/status",
+                    message={
+                        "status": "completed" if status == "completed" else "failed",
+                        "summary": summary[:200] if summary else "",
+                        "duration_seconds": duration,
+                    },
+                    sender_id=agent_id,
+                )
+            except Exception as e:
+                logger.debug("Swarm publish completion failed: %s", e)
+
         # Update TUI registry: mark as completed with summary + token/cost stats for tree panel
         if _subagent_id:
             _unregister_subagent(
@@ -2140,6 +2190,23 @@ def _run_single_child(
     except Exception as exc:
         duration = round(time.monotonic() - child_start, 2)
         logging.exception(f"[subagent-{task_index}] failed")
+
+        # Swarm communication: publish error message
+        if enable_swarm_communication:
+            agent_id = getattr(child, '_subagent_id', f'agent_{task_index}')
+            try:
+                publish(
+                    topic=f"agent/{agent_id}/status",
+                    message={
+                        "status": "failed",
+                        "error": str(exc)[:200],
+                        "duration_seconds": duration,
+                    },
+                    sender_id=agent_id,
+                )
+            except Exception as e:
+                logger.debug("Swarm publish error failed: %s", e)
+
         if child_progress_cb:
             try:
                 child_progress_cb(
@@ -2247,6 +2314,7 @@ def delegate_task(
     acp_args: Optional[List[str]] = None,
     role: Optional[str] = None,
     parent_agent=None,
+    enable_swarm_communication: bool = False,
 ) -> str:
     """
     Spawn one or more child agents to handle delegated tasks.
@@ -2413,7 +2481,7 @@ def delegate_task(
     if n_tasks == 1:
         # Single task -- run directly (no thread pool overhead)
         _i, _t, child = children[0]
-        result = _run_single_child(0, _t["goal"], child, parent_agent)
+        result = _run_single_child(0, _t["goal"], child, parent_agent, enable_swarm_communication=enable_swarm_communication)
         results.append(result)
     else:
         # Batch -- run in parallel with per-task progress lines
@@ -2429,6 +2497,7 @@ def delegate_task(
                     goal=t["goal"],
                     child=child,
                     parent_agent=parent_agent,
+                    enable_swarm_communication=enable_swarm_communication,
                 )
                 futures[future] = i
 

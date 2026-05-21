@@ -12,7 +12,17 @@ import { patchOverlayState } from '../app/overlayStore.js'
 import { $spawnDiff, $spawnHistory, clearDiffPair, type SpawnSnapshot } from '../app/spawnHistoryStore.js'
 import { useTurnSelector } from '../app/turnStore.js'
 import type { GatewayClient } from '../gatewayClient.js'
-import type { DelegationPauseResponse, DelegationStatusResponse, SubagentInterruptResponse } from '../gatewayTypes.js'
+import type {
+  AchievementData,
+  AchievementUnlockedEvent,
+  AchievementsResponse,
+  DelegationPauseResponse,
+  DelegationStatusResponse,
+  DependencyGraphData,
+  DependencyGraphResponse,
+  SubagentInterruptResponse,
+  UnlockedAchievementData
+} from '../gatewayTypes.js'
 import { asRpcResult } from '../lib/rpc.js'
 import {
   buildSubagentTree,
@@ -1015,6 +1025,16 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
   const detailScrollRef = useRef<null | ScrollBoxHandle>(null)
   const prevLiveCountRef = useRef(liveSubagents.length)
 
+  // ── Dependency Graph state ─────────────────────────────────
+  const [dependencyGraph, setDependencyGraph] = useState<DependencyGraphData | null>(null)
+  const [graphLoading, setGraphLoading] = useState(false)
+
+  // ── Achievements state ────────────────────────────────────
+  const [achievements, setAchievements] = useState<AchievementData[]>([])
+  const [unlockedAchievements, setUnlockedAchievements] = useState<UnlockedAchievementData[]>([])
+  const [newAchievement, setNewAchievement] = useState<(UnlockedAchievementData & { achievement?: AchievementData }) | null>(null)
+  const [showAchievementNotification, setShowAchievementNotification] = useState(false)
+
   // ── Derived state ──────────────────────────────────────────
   
   const activeSnapshot = historyIndex > 0 ? history[historyIndex - 1] : null
@@ -1080,6 +1100,56 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
     gw.request<DelegationStatusResponse>('delegation.status', {})
       .then(r => applyDelegationStatus(asRpcResult<DelegationStatusResponse>(r)))
       .catch(() => {})
+  }, [gw])
+
+  useEffect(() => {
+    // Load dependency graph data
+    setGraphLoading(true)
+    gw.request<DependencyGraphResponse>('dependency_graph.get', {})
+      .then(r => {
+        const result = asRpcResult<DependencyGraphResponse>(r)
+        if (result?.graph) {
+          setDependencyGraph(result.graph)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setGraphLoading(false))
+  }, [gw])
+
+  useEffect(() => {
+    // Load achievements data
+    gw.request<AchievementsResponse>('achievements.list', {})
+      .then(r => {
+        const result = asRpcResult<AchievementsResponse>(r)
+        if (result) {
+          setAchievements(result.achievements ?? [])
+          setUnlockedAchievements(result.unlocked ?? [])
+        }
+      })
+      .catch(() => {})
+  }, [gw])
+
+  useEffect(() => {
+    // Listen for achievement unlocked events
+    const handler = (event: AchievementUnlockedEvent) => {
+      if (event.type === 'achievement.unlocked' && event.payload) {
+        setNewAchievement(event.payload)
+        setShowAchievementNotification(true)
+        
+        // Auto-hide notification after 5 seconds
+        setTimeout(() => {
+          setShowAchievementNotification(false)
+          setTimeout(() => setNewAchievement(null), 300)
+        }, 5000)
+      }
+    }
+
+    // Register event listener (assuming gw has onEvent method)
+    gw.onEvent?.(handler)
+    
+    return () => {
+      gw.offEvent?.(handler)
+    }
   }, [gw])
 
   useEffect(() => {
@@ -1298,25 +1368,39 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
           />
         </Box>
         
-        {/* Center Panel - Output (50%) */}
+        {/* Center Panel - Dependency Graph (50%) */}
         <Box width="50%" borderRight paddingX={1}>
-          <AgentOutputPanel
-            node={selected}
+          <DependencyGraphPanel
+            graph={dependencyGraph}
+            loading={graphLoading}
             t={t}
-            showThinking={showThinking}
-            setShowThinking={setShowThinking}
-            showToolCalls={showToolCalls}
-            setShowToolCalls={setShowToolCalls}
-            showIntermediate={showIntermediate}
-            setShowIntermediate={setShowIntermediate}
           />
         </Box>
         
-        {/* Right Panel - Telemetry (25%) */}
-        <Box width="25%" paddingLeft={1}>
+        {/* Right Panel - Achievements + Telemetry (25%) */}
+        <Box width="25%" paddingLeft={1} flexDirection="column">
+          <Box marginBottom={1}>
+            <AchievementsPanel
+              achievements={achievements}
+              unlockedAchievements={unlockedAchievements}
+              t={t}
+            />
+          </Box>
           <TelemetryPanel telemetry={useTelemetry(selectedAgentId, gw)} t={t} />
         </Box>
       </Box>
+
+      {/* Achievement Unlocked Notification */}
+      {showAchievementNotification && newAchievement ? (
+        <AchievementUnlocked
+          achievement={newAchievement}
+          onDismiss={() => {
+            setShowAchievementNotification(false)
+            setTimeout(() => setNewAchievement(null), 300)
+          }}
+          t={t}
+        />
+      ) : null}
 
       {/* Status Bar (100%) */}
       <StatusBar totalTools={totals.totalTools} totalTokens={totals.inputTokens + totals.outputTokens} totalCost={totals.costUsd} t={t} />
@@ -1338,6 +1422,241 @@ export function AgentsOverlay({ gw, initialHistoryIndex = 0, onClose, t }: Agent
       </Box>
     </Box>
   )
+}
+
+// ── Dependency Graph Panel ─────────────────────────────────
+
+function DependencyGraphPanel({
+ graph,
+ loading,
+ t
+}: {
+ graph: DependencyGraphData | null
+ loading: boolean
+ t: Theme
+}) {
+ if (loading) {
+   return (
+     <Box flexDirection="column" padding={1}>
+       <Text color={t.color.muted}>Loading dependency graph...</Text>
+     </Box>
+   )
+ }
+
+ if (!graph || graph.nodes.length === 0) {
+   return (
+     <Box flexDirection="column" padding={1}>
+       <Text color={t.color.muted}>No dependency data available</Text>
+     </Box>
+   )
+ }
+
+ const getStatusColor = (status: string): string => {
+   switch (status) {
+     case 'blocked':
+       return t.color.error
+     case 'ready':
+       return t.color.statusGood
+     case 'running':
+       return t.color.accent
+     case 'completed':
+       return t.color.statusGood
+     case 'failed':
+       return t.color.error
+     case 'skipped':
+       return t.color.muted
+     default:
+       return t.color.text
+   }
+ }
+
+ const getStatusGlyph = (status: string): string => {
+   switch (status) {
+     case 'blocked':
+       return '🔒'
+     case 'ready':
+       return '🔓'
+     case 'running':
+       return '⏳'
+     case 'completed':
+       return '✓'
+     case 'failed':
+       return '✗'
+     case 'skipped':
+       return '⊘'
+     default:
+       return '○'
+   }
+ }
+
+ // Build a map of edges for quick lookup
+ const edgesFrom = (nodeId: string) => graph.edges.filter(e => e.from === nodeId)
+ const edgesTo = (nodeId: string) => graph.edges.filter(e => e.to === nodeId)
+
+ return (
+   <Box flexDirection="column" borderStyle="round" borderColor={t.color.accent} padding={1} height="100%">
+     <Text bold color={t.color.primary}>
+       📊 Dependency Graph ({graph.nodes.length} tasks)
+     </Text>
+     <Box marginTop={1} flexDirection="column" overflow="hidden" flexGrow={1}>
+       {graph.nodes.map(node => {
+         const deps = edgesTo(node.task_id)
+         const dependents = edgesFrom(node.task_id)
+         
+         return (
+           <Box key={node.task_id} flexDirection="column" marginBottom={1}>
+             <Text color={getStatusColor(node.status)}>
+               {getStatusGlyph(node.status)} {node.name || node.task_id}
+               <Text color={t.color.muted}> [{node.status}]</Text>
+             </Text>
+             
+             {deps.length > 0 ? (
+               <Box marginLeft={2}>
+                 <Text color={t.color.muted}>
+                   ↓ depends on: {deps.map(e => {
+                     const dep = graph.nodes.find(n => n.task_id === e.from)
+                     return dep?.name || e.from
+                   }).join(', ')}
+                 </Text>
+               </Box>
+             ) : null}
+             
+             {dependents.length > 0 ? (
+               <Box marginLeft={2}>
+                 <Text color={t.color.muted}>
+                   ↑ blocks: {dependents.map(e => {
+                     const dep = graph.nodes.find(n => n.task_id === e.to)
+                     return dep?.name || e.to
+                   }).join(', ')}
+                 </Text>
+               </Box>
+             ) : null}
+           </Box>
+         )
+       })}
+     </Box>
+   </Box>
+ )
+}
+
+// ── Achievements Panel ───────────────────────────────
+
+function AchievementsPanel({
+ achievements,
+ unlockedAchievements,
+ t
+}: {
+ achievements: AchievementData[]
+ unlockedAchievements: UnlockedAchievementData[]
+ t: Theme
+}) {
+ const unlockedIds = new Set(unlockedAchievements.map(u => u.achievement_id))
+ 
+ const unlockedList = achievements.filter(a => unlockedIds.has(a.achievement_id))
+ const lockedList = achievements.filter(a => !unlockedIds.has(a.achievement_id) && !a.hidden)
+ 
+ const tierOrder: Record<string, number> = {
+   diamond: 0,
+   platinum: 1,
+   gold: 2,
+   silver: 3,
+   bronze: 4
+ }
+ 
+ const sortedUnlocked = [...unlockedList].sort((a, b) =>
+   (tierOrder[a.tier] ?? 99) - (tierOrder[b.tier] ?? 99)
+ )
+ 
+ const sortedLocked = [...lockedList].sort((a, b) =>
+   (tierOrder[a.tier] ?? 99) - (tierOrder[b.tier] ?? 99)
+ )
+
+ return (
+   <Box flexDirection="column" borderStyle="round" borderColor={t.color.warn} padding={1} height="100%">
+     <Text bold color={t.color.primary}>
+       🏆 Achievements ({unlockedList.length}/{achievements.length})
+     </Text>
+     
+     <Box marginTop={1} flexDirection="column" overflow="hidden" flexGrow={1}>
+       {sortedUnlocked.length > 0 ? (
+         <>
+           <Text bold color={t.color.statusGood}>Unlocked:</Text>
+           {sortedUnlocked.slice(-5).map(ach => (
+             <Text key={ach.achievement_id} color={t.color.text}>
+               {ach.emoji} {ach.name}
+               <Text color={t.color.muted}> [{ach.tier}]</Text>
+             </Text>
+           ))}
+         </>
+       ) : null}
+       
+       {sortedLocked.length > 0 ? (
+         <Box marginTop={1}>
+           <Text bold color={t.color.muted}>Locked:</Text>
+           {sortedLocked.slice(0, 5).map(ach => (
+             <Text key={ach.achievement_id} color={t.color.muted}>
+               ? {ach.name}
+               <Text color={t.color.muted}> [{ach.tier}]</Text>
+             </Text>
+           ))}
+         </Box>
+       ) : null}
+       
+       {unlockedList.length === 0 && lockedList.length === 0 ? (
+         <Text color={t.color.muted}>No achievements yet</Text>
+       ) : null}
+     </Box>
+   </Box>
+ )
+}
+
+// ── Achievement Unlocked Notification ─────────────────
+
+function AchievementUnlocked({
+ achievement,
+ onDismiss,
+ t
+}: {
+ achievement: UnlockedAchievementData & { achievement?: AchievementData }
+ onDismiss: () => void
+ t: Theme
+}) {
+ useEffect(() => {
+   const timer = setTimeout(onDismiss, 5000)
+   return () => clearTimeout(timer)
+ }, [onDismiss])
+
+ const ach = achievement.achievement
+ 
+ return (
+   <Box
+     position="absolute"
+     top={2}
+     right={2}
+     borderStyle="double"
+     borderColor={t.color.statusGood}
+     padding={1}
+     backgroundColor={t.color.bg}
+   >
+     <Box flexDirection="column">
+       <Text bold color={t.color.statusGood}>
+         🎉 Achievement Unlocked!
+       </Text>
+       {ach ? (
+         <>
+           <Text color={t.color.text}>
+             {ach.emoji} {ach.name}
+           </Text>
+           <Text color={t.color.muted} wrap="wrap">
+             {ach.description}
+           </Text>
+         </>
+       ) : (
+         <Text color={t.color.text}>{achievement.achievement_id}</Text>
+       )}
+     </Box>
+   </Box>
+ )
 }
 
 interface AgentsOverlayProps {

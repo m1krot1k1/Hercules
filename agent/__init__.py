@@ -20,7 +20,56 @@ from agent.agent_factory import (
 from agent.self_evaluation import SelfEvaluation
 from agent.autonomy_engine import AutonomyEngine
 
+# Checkpoint Manager
+from agent.checkpoint_manager import (
+    AgentCheckpoint,
+    save_checkpoint,
+    load_checkpoint,
+    list_checkpoints,
+)
+
+# Swarm Bus
+from agent.swarm_bus import (
+    SwarmBus,
+    SwarmMessage,
+    MessagePriority,
+    get_swarm_bus,
+    publish,
+    subscribe,
+    get_messages,
+)
+
+# Dependency Graph
+from agent.dependency_graph import (
+    TaskDependencyGraph,
+    TaskStatus,
+    TaskNode,
+    get_dependency_graph,
+)
+
+# Personality Manager
+from agent.personality_manager import (
+    PersonalityManager,
+    Personality,
+    PersonalityType,
+    get_personality_manager,
+    get_personality_prompt,
+    apply_personality_to_system_prompt,
+)
+
+# Achievement System
+from agent.achievement_system import (
+    AchievementSystem,
+    Achievement,
+    AchievementTier,
+    get_achievement_system,
+    check_achievements,
+    unlock_achievement,
+    get_unlocked_achievements,
+)
+
 __all__ = [
+    # Meta-Analysis and Dynamic Agent Creation
     "MetaAnalysisAgent",
     "AgentFactory",
     "DYNAMIC_AGENTS",
@@ -28,6 +77,40 @@ __all__ = [
     "get_dynamic_agent",
     "list_dynamic_agents",
     "load_dynamic_agents_on_startup",
+    # Self-Evaluation and Autonomy Engine
     "SelfEvaluation",
     "AutonomyEngine",
+    # Checkpoint Manager
+    "AgentCheckpoint",
+    "save_checkpoint",
+    "load_checkpoint",
+    "list_checkpoints",
+    # Swarm Bus
+    "SwarmBus",
+    "SwarmMessage",
+    "MessagePriority",
+    "get_swarm_bus",
+    "publish",
+    "subscribe",
+    "get_messages",
+    # Dependency Graph
+    "TaskDependencyGraph",
+    "TaskStatus",
+    "TaskNode",
+    "get_dependency_graph",
+    # Personality Manager
+    "PersonalityManager",
+    "Personality",
+    "PersonalityType",
+    "get_personality_manager",
+    "get_personality_prompt",
+    "apply_personality_to_system_prompt",
+    # Achievement System
+    "AchievementSystem",
+    "Achievement",
+    "AchievementTier",
+    "get_achievement_system",
+    "check_achievements",
+    "unlock_achievement",
+    "get_unlocked_achievements",
 ]
