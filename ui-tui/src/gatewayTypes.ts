@@ -521,3 +521,95 @@ export type GatewayEvent =
       type: 'message.complete'
     }
   | { payload?: { message?: string }; session_id?: string; type: 'error' }
+
+// ── Dependency Graph ─────────────────────────────────────────
+
+export interface DependencyGraphNode {
+ task_id: string
+ name: string
+ description: string
+ depends_on: string[]
+ status: 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'blocked' | 'skipped'
+ created_at: number
+ started_at?: number | null
+ completed_at?: number | null
+ error_message?: string | null
+ retry_count: number
+ max_retries: number
+}
+
+export interface DependencyGraphEdge {
+ from: string
+ to: string
+}
+
+export interface DependencyGraphData {
+ graph_id: string
+ nodes: DependencyGraphNode[]
+ edges: DependencyGraphEdge[]
+}
+
+export interface DependencyGraphResponse {
+ graph?: DependencyGraphData
+}
+
+// ── Achievements ────────────────────────────────────────────
+
+export interface AchievementData {
+ achievement_id: string
+ name: string
+ description: string
+ emoji: string
+ tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
+ condition: string
+ max_progress?: number | null
+ points: number
+ hidden: boolean
+ category: string
+}
+
+export interface UnlockedAchievementData {
+ achievement_id: string
+ agent_id: string
+ unlocked_at: number
+ progress: number
+ formatted_time?: string
+}
+
+export interface AchievementsResponse {
+ achievements?: AchievementData[]
+ unlocked?: UnlockedAchievementData[]
+}
+
+export interface AchievementUnlockedEvent {
+  payload: UnlockedAchievementData & { achievement?: AchievementData }
+  session_id?: string
+  type: 'achievement.unlocked'
+}
+
+// ── Telemetry ──────────────────────────────────────────────
+
+export interface TelemetryData {
+  tokens_used: number
+  tokens_saved: number
+  task_duration: number
+  tools_used: string[]
+  tasks_completed: number
+  autonomous_fixes: number
+  checkpoints_created: number
+  swarm_messages: number
+}
+
+export interface Achievement {
+  achievement_id: string
+  name: string
+  description: string
+  emoji: string
+  tier: string
+  unlocked_at: string
+}
+
+export interface AchievementCheckResponse {
+  new_unlocked?: Achievement[]
+  unlocked?: Achievement[]
+}
